@@ -21,30 +21,31 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 1: Protocol Wire Formats, Cryptographic Identity & Path Sanitization
 ### Subsystem: Protocol Models (`crates/protocol`)
-- [ ] Implement `DeviceType` enum (`mobile`, `desktop`, `web`, `headless`, `server`) with serde string mapping
-- [ ] Implement `ProtocolVersion` compatibility checks
-- [ ] Implement `MulticastAnnouncement` model for UDP beacon packets
-- [ ] Implement `RegisterDto` model for direct HTTP peer registration
-- [ ] Implement `PrepareUploadRequest` and `PrepareUploadResponse` models
-- [ ] Implement `FileDto` model (file ID, fileName, size, fileType, sha256 hash, preview metadata)
-- [ ] Implement `UploadParams` query parser (`sessionId`, `fileId`, `token`)
-- [ ] Implement `InfoResponseDto` device information model
-- [ ] Comprehensive unit tests for JSON serialization and deserialization against official LocalSend fixtures
+- [x] Implement `DeviceType` enum (`mobile`, `desktop`, `web`, `headless`, `server`) with serde string mapping
+- [x] Implement `ProtocolVersion` compatibility checks
+- [x] Implement `MulticastAnnouncement` model for UDP beacon packets
+- [x] Implement `RegisterDto` model for direct HTTP peer registration
+- [x] Implement `PrepareUploadRequest` and `PrepareUploadResponse` models
+- [x] Implement `FileDto` / `FileMetadata` model (file ID, fileName, size, fileType, sha256 hash, preview metadata)
+- [x] Implement `UploadParams` query parser (`sessionId`, `fileId`, `token`)
+- [x] Implement `InfoResponseDto` device information model
+- [x] Comprehensive unit tests for JSON serialization and deserialization against official LocalSend fixtures
 
 ### Subsystem: Cryptographic Engine (`crates/protocol`)
-- [ ] RSA-2048 keypair generation using pure-Rust crypto (`rcgen` / `rsa`)
-- [ ] Self-signed X.509 v3 certificate generation with customizable SANs and 10-year validity
-- [ ] Canonical uppercase 64-hex SHA-256 fingerprint derivation from DER certificate
-- [ ] In-memory and persistent PEM storage/loading for private key and certificate
-- [ ] Unit tests verifying fingerprint derivation reproducibility
+- [x] RSA-2048 keypair generation using pure-Rust crypto (`rcgen` / `rsa`)
+- [x] Self-signed X.509 v3 certificate generation with customizable SANs and Apple ATS 825-day validity
+- [x] Canonical uppercase 64-hex SHA-256 fingerprint derivation from DER certificate
+- [x] Constant-time fingerprint verification against side-channel timing attacks
+- [x] PEM and DER serialization for certificates and PKCS#8 private keys
+- [x] Unit tests verifying fingerprint derivation reproducibility and constant-time verification
 
 ### Subsystem: Filesystem Path Sanitization (`crates/protocol`)
-- [ ] Basename extractor rejecting directory traversal sequences (`..`, `/`, `\`, null bytes)
-- [ ] Windows DOS device filtering (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`)
-- [ ] Sanitization of forbidden characters (`<>:"/\|?*` and ASCII control chars `0x00-0x1F`)
-- [ ] Filename length limiter (255 bytes max with UTF-8 byte boundary awareness)
-- [ ] Collision avoidance mechanism: non-overwriting incremental naming (`filename (1).ext`)
-- [ ] Unit tests for cross-platform malicious path vectors (Unix traversal, Windows traversal, alternate data streams)
+- [x] Basename extractor rejecting directory traversal sequences (`..`, `/`, `\`, null bytes)
+- [x] Windows DOS device filtering (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`)
+- [x] Sanitization of forbidden characters (`<>:"/\|?*` and ASCII control chars `0x00-0x1F`)
+- [x] Filename length limiter (255 bytes max with UTF-8 byte boundary awareness)
+- [x] Collision avoidance mechanism: non-overwriting incremental naming (`filename (1).ext`)
+- [x] Unit tests for cross-platform malicious path vectors (Unix traversal, Windows traversal, DOS device names)
 
 ---
 
