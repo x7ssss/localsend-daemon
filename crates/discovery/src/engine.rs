@@ -22,7 +22,7 @@ impl DiscoveryEngine {
         let multicast = MulticastEngine::new(config, registry.clone())?;
         let scanner = SubnetScanner::new(registry.clone(), port).map_err(|e| match e {
             ScannerError::HttpClient(he) => {
-                MulticastError::Io(std::io::Error::new(std::io::ErrorKind::Other, he.to_string()))
+                MulticastError::Io(std::io::Error::other(he.to_string()))
             }
             ScannerError::Interface(ie) => MulticastError::Interface(ie),
         })?;

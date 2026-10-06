@@ -69,10 +69,7 @@ pub struct MulticastEngine {
 
 impl MulticastEngine {
     /// Initialize the multicast discovery engine across all eligible system interfaces.
-    pub fn new(
-        config: MulticastConfig,
-        registry: PeerRegistry,
-    ) -> Result<Self, MulticastError> {
+    pub fn new(config: MulticastConfig, registry: PeerRegistry) -> Result<Self, MulticastError> {
         let interfaces = interfaces::get_eligible_interfaces().unwrap_or_default();
         let ingress = Arc::new(Self::create_ingress_socket(config.port, &interfaces)?);
         let egress_sockets = Self::create_egress_sockets(&interfaces)?;
@@ -92,7 +89,8 @@ impl MulticastEngine {
         interfaces: &[NetworkInterfaceInfo],
     ) -> Result<UdpSocket, std::io::Error> {
         let domain = socket2::Domain::IPV4;
-        let socket = socket2::Socket::new(domain, socket2::Type::DGRAM, Some(socket2::Protocol::UDP))?;
+        let socket =
+            socket2::Socket::new(domain, socket2::Type::DGRAM, Some(socket2::Protocol::UDP))?;
         socket.set_reuse_address(true)?;
 
         #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]

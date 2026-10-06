@@ -3,11 +3,11 @@
 #![deny(unsafe_code)]
 
 use localsend_daemon::{
-    build_tls_server_config, scavenge_orphaned_parts, AppState, DaemonEvent,
-    ReceiverServer, SessionCoordinator, TrustStore,
+    AppState, DaemonEvent, ReceiverServer, SessionCoordinator, TrustStore, build_tls_server_config,
+    scavenge_orphaned_parts,
 };
 #[cfg(unix)]
-use localsend_daemon::{IpcServerState, DEFAULT_UDS_SOCKET_PATH};
+use localsend_daemon::{DEFAULT_UDS_SOCKET_PATH, IpcServerState};
 use localsend_discovery::PeerRegistry;
 use localsend_protocol::crypto::generate_tls_identity;
 use localsend_protocol::{DeviceType, InfoResponseDto, ProtocolType};
@@ -18,7 +18,7 @@ use std::time::Duration;
 #[cfg(unix)]
 use std::time::Instant;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
@@ -120,7 +120,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let ipc_cancel = cancel_token.clone();
         tokio::spawn(async move {
-            if let Err(e) = localsend_daemon::run_uds_server(&socket_path, ipc_state, ipc_cancel).await {
+            if let Err(e) =
+                localsend_daemon::run_uds_server(&socket_path, ipc_state, ipc_cancel).await
+            {
                 tracing::error!("IPC UDS server error: {e}");
             }
         });

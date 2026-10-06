@@ -66,9 +66,7 @@ impl SubnetScanner {
     }
 
     /// Computes candidate host IPv4 addresses across all connected /24 subnets.
-    pub fn enumerate_candidate_ips(
-        interfaces: &[NetworkInterfaceInfo],
-    ) -> Vec<Ipv4Addr> {
+    pub fn enumerate_candidate_ips(interfaces: &[NetworkInterfaceInfo]) -> Vec<Ipv4Addr> {
         let mut candidates = HashSet::new();
 
         for iface in interfaces {
@@ -103,33 +101,33 @@ impl SubnetScanner {
             .send()
             .await;
 
-        if let Ok(response) = res {
-            if response.status().is_success() {
-                // If the response body contains registration or device info, parse it
-                if let Ok(reg_dto) = response.json::<RegisterDto>().await {
-                    let addr = SocketAddr::new(IpAddr::V4(target_ip), port);
-                    registry.upsert_from_register(&reg_dto, addr).await;
-                    return;
-                }
+        if let Ok(response) = res
+            && response.status().is_success()
+        {
+            // If the response body contains registration or device info, parse it
+            if let Ok(reg_dto) = response.json::<RegisterDto>().await {
+                let addr = SocketAddr::new(IpAddr::V4(target_ip), port);
+                registry.upsert_from_register(&reg_dto, addr).await;
+                return;
+            }
 
-                // If body was empty, query GET /info
-                let info_url = format!("https://{target_ip}:{port}/api/localsend/v2/info");
-                if let Ok(info_res) = client.get(&info_url).send().await {
-                    if let Ok(info_dto) = info_res.json::<InfoResponseDto>().await {
-                        let reg = RegisterDto {
-                            alias: info_dto.alias,
-                            version: info_dto.version,
-                            device_model: info_dto.device_model,
-                            device_type: info_dto.device_type,
-                            fingerprint: info_dto.fingerprint,
-                            port: info_dto.port,
-                            protocol: info_dto.protocol,
-                            download: info_dto.download,
-                        };
-                        let addr = SocketAddr::new(IpAddr::V4(target_ip), port);
-                        registry.upsert_from_register(&reg, addr).await;
-                    }
-                }
+            // If body was empty, query GET /info
+            let info_url = format!("https://{target_ip}:{port}/api/localsend/v2/info");
+            if let Ok(info_res) = client.get(&info_url).send().await
+                && let Ok(info_dto) = info_res.json::<InfoResponseDto>().await
+            {
+                let reg = RegisterDto {
+                    alias: info_dto.alias,
+                    version: info_dto.version,
+                    device_model: info_dto.device_model,
+                    device_type: info_dto.device_type,
+                    fingerprint: info_dto.fingerprint,
+                    port: info_dto.port,
+                    protocol: info_dto.protocol,
+                    download: info_dto.download,
+                };
+                let addr = SocketAddr::new(IpAddr::V4(target_ip), port);
+                registry.upsert_from_register(&reg, addr).await;
             }
         }
     }

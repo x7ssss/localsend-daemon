@@ -5,7 +5,7 @@
 use crate::ipc::protocol::{DaemonEvent, FileInfo};
 use crate::session::{SessionCoordinator, SessionError};
 use crate::storage::{
-    commit_file_atomically, get_temp_file_path, stream_to_disk_and_hash, StorageError,
+    StorageError, commit_file_atomically, get_temp_file_path, stream_to_disk_and_hash,
 };
 use crate::trust::{AutoAcceptMode, TrustStore};
 use axum::extract::{ConnectInfo, Query, State};
@@ -14,13 +14,11 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use localsend_discovery::PeerRegistry;
-use localsend_protocol::{
-    InfoResponseDto, PrepareUploadRequest, RegisterDto, UploadParams,
-};
+use localsend_protocol::{InfoResponseDto, PrepareUploadRequest, RegisterDto, UploadParams};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 
 /// Application state shared across all HTTP handlers.
 #[derive(Clone)]
@@ -59,7 +57,10 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .route("/api/localsend/v2/info", get(handle_info))
         .route("/api/localsend/v2/register", post(handle_register))
-        .route("/api/localsend/v2/prepare-upload", post(handle_prepare_upload))
+        .route(
+            "/api/localsend/v2/prepare-upload",
+            post(handle_prepare_upload),
+        )
         .route("/api/localsend/v2/upload", post(handle_upload))
         .route("/api/localsend/v2/cancel", post(handle_cancel))
         .with_state(state)
@@ -120,7 +121,10 @@ async fn handle_prepare_upload(
 
     // Also register peer in the discovery registry
     let reg_addr = SocketAddr::new(client_ip, req.info.port);
-    state.registry.upsert_from_register(&req.info, reg_addr).await;
+    state
+        .registry
+        .upsert_from_register(&req.info, reg_addr)
+        .await;
 
     // 2. Check Trust policy
     let (is_trusted, auto_accept_mode) = {
@@ -190,16 +194,12 @@ async fn handle_prepare_upload(
                 "Another transfer session is currently in progress",
             )
                 .into_response(),
-            Err(SessionError::Rejected) => (
-                StatusCode::FORBIDDEN,
-                "Session was rejected",
-            )
-                .into_response(),
-            Err(SessionError::ApprovalTimeout) => (
-                StatusCode::FORBIDDEN,
-                "Session approval timed out",
-            )
-                .into_response(),
+            Err(SessionError::Rejected) => {
+                (StatusCode::FORBIDDEN, "Session was rejected").into_response()
+            }
+            Err(SessionError::ApprovalTimeout) => {
+                (StatusCode::FORBIDDEN, "Session approval timed out").into_response()
+            }
             Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
         }
     }
@@ -253,7 +253,8 @@ async fn handle_upload(
     match stream_result {
         Ok(_) => {
             // 3. Atomically commit file to final location
-            match commit_file_atomically(&temp_path, &state.save_dir, &staged_file.file_name).await {
+            match commit_file_atomically(&temp_path, &state.save_dir, &staged_file.file_name).await
+            {
                 Ok(_final_path) => {
                     let _ = state
                         .coordinator
@@ -321,21 +322,21 @@ async fn handle_cancel(
     State(state): State<AppState>,
     Query(params): Query<CancelParams>,
 ) -> Response {
-    if let Some(session_id) = params.session_id {
-        if let Ok(active) = state.coordinator.cancel_session(&session_id).await {
-            let _ = state.event_tx.send(DaemonEvent::SessionTerminated {
-                session_id: session_id.clone(),
-                reason: "Remote peer cancelled session".to_string(),
-            });
-            // Unlink any staging files for this session
-            for file_id in active.files.keys() {
-                let temp_path = get_temp_file_path(&state.save_dir, &session_id, file_id);
-                if temp_path.exists() {
-                    let _ = tokio::fs::remove_file(temp_path).await;
-                }
+    if let Some(session_id) = params.session_id
+        && let Ok(active) = state.coordinator.cancel_session(&session_id).await
+    {
+        let _ = state.event_tx.send(DaemonEvent::SessionTerminated {
+            session_id: session_id.clone(),
+            reason: "Remote peer cancelled session".to_string(),
+        });
+        // Unlink any staging files for this session
+        for file_id in active.files.keys() {
+            let temp_path = get_temp_file_path(&state.save_dir, &session_id, file_id);
+            if temp_path.exists() {
+                let _ = tokio::fs::remove_file(temp_path).await;
             }
-            return StatusCode::OK.into_response();
         }
+        return StatusCode::OK.into_response();
     }
 
     StatusCode::OK.into_response()

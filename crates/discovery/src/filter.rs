@@ -22,7 +22,9 @@ pub fn contains_subslice(haystack: &[u8], needle: &[u8]) -> bool {
     if needle.len() > haystack.len() {
         return false;
     }
-    haystack.windows(needle.len()).any(|window| window == needle)
+    haystack
+        .windows(needle.len())
+        .any(|window| window == needle)
 }
 
 /// Evaluates whether a raw incoming datagram should proceed to full JSON deserialization.
@@ -47,9 +49,7 @@ pub fn should_process_packet(packet: &[u8], local_fingerprint: &str) -> bool {
     }
 
     // 3. Self-echo loopback suppression
-    if !local_fingerprint.is_empty()
-        && contains_subslice(packet, local_fingerprint.as_bytes())
-    {
+    if !local_fingerprint.is_empty() && contains_subslice(packet, local_fingerprint.as_bytes()) {
         return false;
     }
 
@@ -100,9 +100,8 @@ mod tests {
     #[test]
     fn test_json_framing_rejected() {
         // Missing closing brace
-        let invalid = format!(
-            r#"{{"alias":"Remote","protocol":"https","fingerprint":"{OTHER_FP}""#
-        );
+        let invalid =
+            format!(r#"{{"alias":"Remote","protocol":"https","fingerprint":"{OTHER_FP}""#);
         assert!(!should_process_packet(invalid.as_bytes(), SAMPLE_FP));
 
         // Non-JSON noise

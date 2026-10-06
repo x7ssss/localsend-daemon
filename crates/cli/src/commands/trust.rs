@@ -15,9 +15,7 @@ pub async fn add(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let path = socket_path.unwrap_or_else(|| PathBuf::from(IpcClient::DEFAULT_PATH));
     let mut client = IpcClient::connect(&path).await?;
-    client
-        .add_trust(fingerprint.clone(), alias.clone())
-        .await?;
+    client.add_trust(fingerprint.clone(), alias.clone()).await?;
 
     if json_output {
         println!(

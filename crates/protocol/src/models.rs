@@ -17,12 +17,13 @@ const fn default_true() -> bool {
 }
 
 /// Device categories recognized in LocalSend.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum DeviceType {
     /// Mobile phones and tablets.
     Mobile,
     /// Desktop computers and laptops.
+    #[default]
     Desktop,
     /// Web browser clients.
     Web,
@@ -30,12 +31,6 @@ pub enum DeviceType {
     Headless,
     /// Dedicated servers.
     Server,
-}
-
-impl Default for DeviceType {
-    fn default() -> Self {
-        Self::Desktop
-    }
 }
 
 impl<'de> Deserialize<'de> for DeviceType {
@@ -80,19 +75,14 @@ impl<'de> Deserialize<'de> for DeviceType {
 }
 
 /// Network transport protocol variant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ProtocolType {
     /// Insecure plain HTTP.
     Http,
     /// Encrypted HTTPS with self-signed TLS.
+    #[default]
     Https,
-}
-
-impl Default for ProtocolType {
-    fn default() -> Self {
-        Self::Https
-    }
 }
 
 impl std::fmt::Display for ProtocolType {

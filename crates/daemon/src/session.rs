@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{oneshot, RwLock};
+use tokio::sync::{RwLock, oneshot};
 use uuid::Uuid;
 
 /// Default session inactivity expiration (5 minutes).
@@ -313,13 +313,12 @@ impl SessionCoordinator {
     /// Approve a pending session by session ID.
     pub async fn approve_pending_session(&self, session_id: &str) -> bool {
         let mut guard = self.pending.write().await;
-        if let Some(pending) = &mut *guard {
-            if pending.session_id == session_id {
-                if let Some(tx) = pending.approve_tx.take() {
-                    let _ = tx.send(true);
-                    return true;
-                }
-            }
+        if let Some(pending) = &mut *guard
+            && pending.session_id == session_id
+            && let Some(tx) = pending.approve_tx.take()
+        {
+            let _ = tx.send(true);
+            return true;
         }
         false
     }
@@ -327,13 +326,12 @@ impl SessionCoordinator {
     /// Reject a pending session by session ID.
     pub async fn reject_pending_session(&self, session_id: &str) -> bool {
         let mut guard = self.pending.write().await;
-        if let Some(pending) = &mut *guard {
-            if pending.session_id == session_id {
-                if let Some(tx) = pending.approve_tx.take() {
-                    let _ = tx.send(false);
-                    return true;
-                }
-            }
+        if let Some(pending) = &mut *guard
+            && pending.session_id == session_id
+            && let Some(tx) = pending.approve_tx.take()
+        {
+            let _ = tx.send(false);
+            return true;
         }
         false
     }
@@ -430,10 +428,20 @@ impl SessionCoordinator {
         if let Some(file) = active.files.get_mut(file_id) {
             file.status = FileStatus::Failed;
             active.last_activity = Instant::now();
-            Ok(())
         } else {
-            Err(SessionError::FileNotFound)
+            return Err(SessionError::FileNotFound);
         }
+
+        let all_terminal = active
+            .files
+            .values()
+            .all(|f| f.status == FileStatus::Completed || f.status == FileStatus::Failed);
+
+        if all_terminal {
+            *guard = None;
+        }
+
+        Ok(())
     }
 
     /// Cancel and clear active session, returning session metadata if found.

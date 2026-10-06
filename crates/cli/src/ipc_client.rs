@@ -5,8 +5,8 @@
 
 use futures_util::{SinkExt, StreamExt};
 use localsend_daemon::{
-    DaemonEvent, DaemonStatus, IpcMessage, IpcPayload, IpcRequest, IpcResponse, PeerSummary,
-    DEFAULT_UDS_SOCKET_PATH,
+    DEFAULT_UDS_SOCKET_PATH, DaemonEvent, DaemonStatus, IpcMessage, IpcPayload, IpcRequest,
+    IpcResponse, PeerSummary,
 };
 use std::path::Path;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -126,7 +126,10 @@ impl IpcClient {
 
     /// Approve a pending incoming transfer session.
     pub async fn accept_session(&mut self, session_id: String) -> Result<(), IpcClientError> {
-        match self.send_request(IpcRequest::AcceptSession { session_id }).await? {
+        match self
+            .send_request(IpcRequest::AcceptSession { session_id })
+            .await?
+        {
             IpcResponse::Ok => Ok(()),
             other => Err(IpcClientError::UnexpectedResponse(format!("{other:?}"))),
         }
@@ -138,7 +141,10 @@ impl IpcClient {
         session_id: String,
         reason: Option<String>,
     ) -> Result<(), IpcClientError> {
-        match self.send_request(IpcRequest::RejectSession { session_id, reason }).await? {
+        match self
+            .send_request(IpcRequest::RejectSession { session_id, reason })
+            .await?
+        {
             IpcResponse::Ok => Ok(()),
             other => Err(IpcClientError::UnexpectedResponse(format!("{other:?}"))),
         }
@@ -146,7 +152,10 @@ impl IpcClient {
 
     /// Cancel an active transfer session.
     pub async fn cancel_session(&mut self, session_id: String) -> Result<(), IpcClientError> {
-        match self.send_request(IpcRequest::CancelSession { session_id }).await? {
+        match self
+            .send_request(IpcRequest::CancelSession { session_id })
+            .await?
+        {
             IpcResponse::Ok => Ok(()),
             other => Err(IpcClientError::UnexpectedResponse(format!("{other:?}"))),
         }
@@ -173,7 +182,10 @@ impl IpcClient {
     /// Subscribe to asynchronous daemon events and return a stream yielding `DaemonEvent`s.
     pub async fn subscribe_events(
         mut self,
-    ) -> Result<futures_util::stream::BoxStream<'static, Result<DaemonEvent, IpcClientError>>, IpcClientError> {
+    ) -> Result<
+        futures_util::stream::BoxStream<'static, Result<DaemonEvent, IpcClientError>>,
+        IpcClientError,
+    > {
         match self.send_request(IpcRequest::SubscribeEvents).await? {
             IpcResponse::Ok => {}
             other => return Err(IpcClientError::UnexpectedResponse(format!("{other:?}"))),
@@ -183,10 +195,10 @@ impl IpcClient {
             while let Some(res) = framed.next().await {
                 match res {
                     Ok(line) => {
-                        if let Ok(msg) = serde_json::from_str::<IpcMessage>(&line) {
-                            if let IpcPayload::Event(event) = msg.payload {
-                                return Some((Ok(event), framed));
-                            }
+                        if let Ok(msg) = serde_json::from_str::<IpcMessage>(&line)
+                            && let IpcPayload::Event(event) = msg.payload
+                        {
+                            return Some((Ok(event), framed));
                         }
                     }
                     Err(e) => return Some((Err(IpcClientError::Lines(e)), framed)),
@@ -203,13 +215,13 @@ impl IpcClient {
 mod tests {
     use super::*;
     use localsend_daemon::{
-        handle_ipc_client, AutoAcceptMode, IpcServerState, SessionCoordinator, TrustStore,
+        AutoAcceptMode, IpcServerState, SessionCoordinator, TrustStore, handle_ipc_client,
     };
     use localsend_discovery::PeerRegistry;
     use std::sync::Arc;
     use std::time::Instant;
     use tokio::io::duplex;
-    use tokio::sync::{broadcast, RwLock};
+    use tokio::sync::{RwLock, broadcast};
 
     #[tokio::test]
     async fn test_ipc_client_roundtrip_methods() {
@@ -249,7 +261,10 @@ mod tests {
             .add_trust("AABB11".to_string(), "Phone".to_string())
             .await
             .unwrap();
-        assert_eq!(trust_store.read().await.auto_accept_mode(), AutoAcceptMode::TrustedOnly);
+        assert_eq!(
+            trust_store.read().await.auto_accept_mode(),
+            AutoAcceptMode::TrustedOnly
+        );
 
         let _ = tokio::fs::remove_dir_all(&temp_dir).await;
     }

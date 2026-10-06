@@ -4,7 +4,7 @@
 //! concurrent SHA-256 hash calculation, atomic destination renaming, and RAII orphan cleanup.
 
 use futures_util::StreamExt;
-use localsend_protocol::{resolve_collision, sanitize_filename, SanitizeError};
+use localsend_protocol::{SanitizeError, resolve_collision, sanitize_filename};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -125,26 +125,26 @@ pub async fn stream_to_disk_and_hash(
 
         total_bytes += bytes.len() as u64;
 
-        if let Some(exp_size) = expected_size {
-            if total_bytes > exp_size {
-                return Err(StorageError::SizeExceeded {
-                    expected: exp_size,
-                    received: total_bytes,
-                });
-            }
+        if let Some(exp_size) = expected_size
+            && total_bytes > exp_size
+        {
+            return Err(StorageError::SizeExceeded {
+                expected: exp_size,
+                received: total_bytes,
+            });
         }
 
         hasher.update(bytes);
         writer.write_all(bytes).await?;
     }
 
-    if let Some(exp_size) = expected_size {
-        if total_bytes != exp_size {
-            return Err(StorageError::SizeTruncated {
-                expected: exp_size,
-                received: total_bytes,
-            });
-        }
+    if let Some(exp_size) = expected_size
+        && total_bytes != exp_size
+    {
+        return Err(StorageError::SizeTruncated {
+            expected: exp_size,
+            received: total_bytes,
+        });
     }
 
     writer.flush().await?;
@@ -209,20 +209,16 @@ pub async fn scavenge_orphaned_parts(
 
     while let Ok(Some(entry)) = dir.next_entry().await {
         let path = entry.path();
-        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            if name.starts_with(".localsend_") && name.ends_with(".part") {
-                if let Ok(metadata) = entry.metadata().await {
-                    if let Ok(modified) = metadata.modified() {
-                        if let Ok(elapsed) = modified.elapsed() {
-                            if elapsed > max_age {
-                                if tokio::fs::remove_file(&path).await.is_ok() {
-                                    removed += 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if let Some(name) = path.file_name().and_then(|n| n.to_str())
+            && name.starts_with(".localsend_")
+            && name.ends_with(".part")
+            && let Ok(metadata) = entry.metadata().await
+            && let Ok(modified) = metadata.modified()
+            && let Ok(elapsed) = modified.elapsed()
+            && elapsed > max_age
+            && tokio::fs::remove_file(&path).await.is_ok()
+        {
+            removed += 1;
         }
     }
 
@@ -247,7 +243,10 @@ mod tests {
             // Drops here while armed
         }
 
-        assert!(!temp_file.exists(), "Armed guard should unlink file on drop");
+        assert!(
+            !temp_file.exists(),
+            "Armed guard should unlink file on drop"
+        );
         let _ = tokio::fs::remove_dir_all(&temp_dir).await;
     }
 
@@ -264,7 +263,10 @@ mod tests {
             guard.disarm();
         }
 
-        assert!(temp_file.exists(), "Disarmed guard must not unlink file on drop");
+        assert!(
+            temp_file.exists(),
+            "Disarmed guard must not unlink file on drop"
+        );
         let _ = tokio::fs::remove_dir_all(&temp_dir).await;
     }
 
@@ -315,16 +317,15 @@ mod tests {
         let bad_hash = "0000000000000000000000000000000000000000000000000000000000000000";
 
         let body = axum::body::Body::from(payload.to_vec());
-        let res = stream_to_disk_and_hash(
-            body,
-            &temp_file,
-            Some(payload.len() as u64),
-            Some(bad_hash),
-        )
-        .await;
+        let res =
+            stream_to_disk_and_hash(body, &temp_file, Some(payload.len() as u64), Some(bad_hash))
+                .await;
 
         assert!(matches!(res, Err(StorageError::HashMismatch { .. })));
-        assert!(!temp_file.exists(), ".part file must be cleaned up on mismatch");
+        assert!(
+            !temp_file.exists(),
+            ".part file must be cleaned up on mismatch"
+        );
 
         let _ = tokio::fs::remove_dir_all(&temp_dir).await;
     }

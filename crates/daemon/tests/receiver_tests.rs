@@ -1,10 +1,8 @@
 use localsend_daemon::{
-    build_tls_server_config, commit_file_atomically, get_temp_file_path, stream_to_disk_and_hash,
     AppState, AutoAcceptMode, DaemonEvent, ReceiverServer, SessionCoordinator, StorageError,
-    TrustStore,
+    TrustStore, build_tls_server_config, commit_file_atomically, get_temp_file_path,
+    stream_to_disk_and_hash,
 };
-use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
 use localsend_discovery::PeerRegistry;
 use localsend_protocol::crypto::generate_tls_identity;
 use localsend_protocol::{
@@ -13,7 +11,9 @@ use localsend_protocol::{
 };
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::net::TcpListener;
+use tokio::sync::{RwLock, broadcast};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::test]
@@ -69,8 +69,7 @@ async fn test_storage_streaming_and_atomic_commit() {
 
 #[tokio::test]
 async fn test_storage_hash_mismatch_cleans_up_part_file() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("daemon_mismatch_{}", uuid::Uuid::new_v4()));
+    let temp_dir = std::env::temp_dir().join(format!("daemon_mismatch_{}", uuid::Uuid::new_v4()));
     tokio::fs::create_dir_all(&temp_dir).await.unwrap();
 
     let content = b"Actual file data";
@@ -78,13 +77,8 @@ async fn test_storage_hash_mismatch_cleans_up_part_file() {
     let temp_file = get_temp_file_path(&temp_dir, "s_bad", "f_bad");
 
     let body = axum::body::Body::from(content.to_vec());
-    let res = stream_to_disk_and_hash(
-        body,
-        &temp_file,
-        Some(content.len() as u64),
-        Some(bad_hash),
-    )
-    .await;
+    let res =
+        stream_to_disk_and_hash(body, &temp_file, Some(content.len() as u64), Some(bad_hash)).await;
 
     assert!(matches!(res, Err(StorageError::HashMismatch { .. })));
     assert!(
@@ -228,9 +222,8 @@ async fn test_full_https_receiver_flow() {
     assert_eq!(conflict_res.status(), reqwest::StatusCode::CONFLICT);
 
     // E. Execute Upload
-    let upload_url = format!(
-        "{base_url}/upload?sessionId={session_id}&fileId=file-abc-1&token={token}"
-    );
+    let upload_url =
+        format!("{base_url}/upload?sessionId={session_id}&fileId=file-abc-1&token={token}");
     let upload_res = client
         .post(&upload_url)
         .body(file_content.to_vec())
@@ -255,8 +248,7 @@ async fn test_full_https_receiver_flow() {
 
 #[tokio::test]
 async fn test_cancel_session_flow() {
-    let temp_dir =
-        std::env::temp_dir().join(format!("daemon_cancel_{}", uuid::Uuid::new_v4()));
+    let temp_dir = std::env::temp_dir().join(format!("daemon_cancel_{}", uuid::Uuid::new_v4()));
     tokio::fs::create_dir_all(&temp_dir).await.unwrap();
 
     let identity = generate_tls_identity("CancelServer", &[]).unwrap();
@@ -349,13 +341,19 @@ async fn test_cancel_session_flow() {
 
     // Cancel session
     let cancel_res = client
-        .post(format!("{base_url}/cancel?sessionId={}", prep_res.session_id))
+        .post(format!(
+            "{base_url}/cancel?sessionId={}",
+            prep_res.session_id
+        ))
         .send()
         .await
         .unwrap();
     assert_eq!(cancel_res.status(), reqwest::StatusCode::OK);
 
-    assert!(!coordinator.is_busy().await, "Session must be cleared after cancel");
+    assert!(
+        !coordinator.is_busy().await,
+        "Session must be cleared after cancel"
+    );
 
     cancel.cancel();
     let _ = tokio::fs::remove_dir_all(&temp_dir).await;

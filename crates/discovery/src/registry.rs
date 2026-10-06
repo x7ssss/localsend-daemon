@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 
 /// Metadata and network location of a discovered LocalSend peer.
 #[derive(Debug, Clone, PartialEq)]

@@ -5,8 +5,8 @@ use localsend_cli::commands::send;
 use localsend_cli::tls_client::FingerprintVerifier;
 use localsend_cli::{Cli, Commands, TrustAction};
 use localsend_daemon::{
-    build_tls_server_config, AppState, AutoAcceptMode, DaemonEvent, ReceiverServer,
-    SessionCoordinator, TrustStore,
+    AppState, AutoAcceptMode, DaemonEvent, ReceiverServer, SessionCoordinator, TrustStore,
+    build_tls_server_config,
 };
 use localsend_discovery::PeerRegistry;
 use localsend_protocol::crypto::generate_tls_identity;
@@ -16,7 +16,7 @@ use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio_util::sync::CancellationToken;
 
 #[test]
@@ -33,7 +33,8 @@ fn test_cli_subcommands_syntax_and_defaults() {
     assert!(!cli.json);
 
     // 2. scan custom
-    let cli = Cli::try_parse_from(["lsend", "--json", "scan", "--duration", "10", "--http-scan"]).unwrap();
+    let cli = Cli::try_parse_from(["lsend", "--json", "scan", "--duration", "10", "--http-scan"])
+        .unwrap();
     assert_eq!(
         cli.command,
         Commands::Scan {
@@ -83,15 +84,8 @@ fn test_cli_subcommands_syntax_and_defaults() {
     assert_eq!(cli.command, Commands::Status);
 
     // 6. trust add
-    let cli = Cli::try_parse_from([
-        "lsend",
-        "trust",
-        "add",
-        "1122334455",
-        "--alias",
-        "DeskNode",
-    ])
-    .unwrap();
+    let cli = Cli::try_parse_from(["lsend", "trust", "add", "1122334455", "--alias", "DeskNode"])
+        .unwrap();
     assert_eq!(
         cli.command,
         Commands::Trust {
@@ -112,24 +106,15 @@ fn test_fingerprint_verifier_validation() {
     let server_name = ServerName::try_from("127.0.0.1").unwrap();
 
     // 1. Matches expected fingerprint -> Ok
-    let valid = verifier.verify_server_cert(
-        &cert_der,
-        &[],
-        &server_name,
-        &[],
-        UnixTime::now(),
-    );
+    let valid = verifier.verify_server_cert(&cert_der, &[], &server_name, &[], UnixTime::now());
     assert!(valid.is_ok());
 
     // 2. Mismatched fingerprint -> ApplicationVerificationFailure
-    let wrong_verifier = FingerprintVerifier::new("0000000000000000000000000000000000000000000000000000000000000000");
-    let invalid = wrong_verifier.verify_server_cert(
-        &cert_der,
-        &[],
-        &server_name,
-        &[],
-        UnixTime::now(),
+    let wrong_verifier = FingerprintVerifier::new(
+        "0000000000000000000000000000000000000000000000000000000000000000",
     );
+    let invalid =
+        wrong_verifier.verify_server_cert(&cert_der, &[], &server_name, &[], UnixTime::now());
     assert!(invalid.is_err());
 }
 
@@ -197,16 +182,24 @@ async fn test_e2e_send_with_pinned_tls_client() {
     )
     .await;
 
-    assert!(send_result.is_ok(), "Transfer with valid fingerprint should succeed: {:?}", send_result.err());
+    assert!(
+        send_result.is_ok(),
+        "Transfer with valid fingerprint should succeed: {:?}",
+        send_result.err()
+    );
 
     // Verify file exists at receiver save_dir
     let received_file = save_dir.join("document.txt");
-    assert!(received_file.exists(), "Received file must exist on receiver disk");
+    assert!(
+        received_file.exists(),
+        "Received file must exist on receiver disk"
+    );
     let received_content = tokio::fs::read(&received_file).await.unwrap();
     assert_eq!(received_content, test_content);
 
     // 4. Send file with mismatched pinned fingerprint -> MUST FAIL
-    let mismatched_fp = "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF".to_string();
+    let mismatched_fp =
+        "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF".to_string();
     let fail_result = send::run(
         &target_addr,
         &[test_file.clone()],
@@ -217,7 +210,10 @@ async fn test_e2e_send_with_pinned_tls_client() {
     )
     .await;
 
-    assert!(fail_result.is_err(), "Transfer with mismatched fingerprint must fail");
+    assert!(
+        fail_result.is_err(),
+        "Transfer with mismatched fingerprint must fail"
+    );
 
     cancel.cancel();
     let _ = tokio::fs::remove_dir_all(&temp_dir).await;
@@ -232,7 +228,9 @@ async fn test_e2e_send_with_pin_protection() {
     tokio::fs::create_dir_all(&send_dir).await.unwrap();
 
     let test_file = send_dir.join("secret.bin");
-    tokio::fs::write(&test_file, b"top secret bytes").await.unwrap();
+    tokio::fs::write(&test_file, b"top secret bytes")
+        .await
+        .unwrap();
 
     let server_identity = generate_tls_identity("PinServer", &[]).unwrap();
     let server_tls = build_tls_server_config(&server_identity).unwrap();

@@ -148,13 +148,8 @@ mod tests {
 
         let cert_der = CertificateDer::from(identity.cert_der.clone());
         let server_name = ServerName::try_from("127.0.0.1").unwrap();
-        let result = verifier.verify_server_cert(
-            &cert_der,
-            &[],
-            &server_name,
-            &[],
-            UnixTime::now(),
-        );
+        let result =
+            verifier.verify_server_cert(&cert_der, &[], &server_name, &[], UnixTime::now());
 
         assert!(result.is_ok(), "Expected valid certificate to be verified");
     }
@@ -170,14 +165,12 @@ mod tests {
         // Presented certificate from id2
         let cert_der = CertificateDer::from(id2.cert_der.clone());
         let server_name = ServerName::try_from("127.0.0.1").unwrap();
-        let result = verifier.verify_server_cert(
-            &cert_der,
-            &[],
-            &server_name,
-            &[],
-            UnixTime::now(),
-        );
+        let result =
+            verifier.verify_server_cert(&cert_der, &[], &server_name, &[], UnixTime::now());
 
-        assert!(result.is_err(), "Expected mismatched certificate to be rejected");
+        assert!(
+            result.is_err(),
+            "Expected mismatched certificate to be rejected"
+        );
     }
 }

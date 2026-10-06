@@ -70,7 +70,8 @@ mod tests {
     #[test]
     fn test_cli_argument_parsing() {
         // Test scan
-        let parsed = Cli::try_parse_from(["lsend", "scan", "--duration", "5", "--http-scan"]).unwrap();
+        let parsed =
+            Cli::try_parse_from(["lsend", "scan", "--duration", "5", "--http-scan"]).unwrap();
         assert_eq!(
             parsed.command,
             Commands::Scan {
@@ -111,7 +112,8 @@ mod tests {
         );
 
         // Test reject
-        let parsed = Cli::try_parse_from(["lsend", "reject", "sess-123", "--reason", "busy"]).unwrap();
+        let parsed =
+            Cli::try_parse_from(["lsend", "reject", "sess-123", "--reason", "busy"]).unwrap();
         assert_eq!(
             parsed.command,
             Commands::Reject {

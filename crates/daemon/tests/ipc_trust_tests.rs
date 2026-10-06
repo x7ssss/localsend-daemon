@@ -2,9 +2,9 @@
 
 use futures_util::{SinkExt, StreamExt};
 use localsend_daemon::{
-    build_tls_server_config, handle_ipc_client, AppState, AutoAcceptMode, DaemonEvent,
-    IpcMessage, IpcPayload, IpcRequest, IpcResponse, IpcServerState, ReceiverServer,
-    SessionCoordinator, SessionError, TrustStore,
+    AppState, AutoAcceptMode, DaemonEvent, IpcMessage, IpcPayload, IpcRequest, IpcResponse,
+    IpcServerState, ReceiverServer, SessionCoordinator, SessionError, TrustStore,
+    build_tls_server_config, handle_ipc_client,
 };
 use localsend_discovery::PeerRegistry;
 use localsend_protocol::crypto::generate_tls_identity;
@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::io::duplex;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio_util::codec::{Framed, LinesCodec};
 use tokio_util::sync::CancellationToken;
 
@@ -98,7 +98,10 @@ async fn test_ipc_roundtrip_commands_and_event_streaming() {
     let resp1: IpcMessage = serde_json::from_str(&resp1_str).unwrap();
     assert_eq!(resp1.id.as_deref(), Some("1"));
     if let IpcPayload::Response(IpcResponse::Status(status)) = resp1.payload {
-        assert_eq!(status.bound_ips, vec![IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))]);
+        assert_eq!(
+            status.bound_ips,
+            vec![IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))]
+        );
         assert_eq!(status.active_session, None);
     } else {
         panic!("Expected Status response");
@@ -153,10 +156,12 @@ async fn test_ipc_roundtrip_commands_and_event_streaming() {
     let resp4_str = client_framed.next().await.unwrap().unwrap();
     let resp4: IpcMessage = serde_json::from_str(&resp4_str).unwrap();
     assert_eq!(resp4.payload, IpcPayload::Response(IpcResponse::Ok));
-    assert!(trust_store
-        .read()
-        .await
-        .is_trusted(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), Some("112233")));
+    assert!(
+        trust_store
+            .read()
+            .await
+            .is_trusted(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), Some("112233"))
+    );
 
     // 5. Subscribe to events
     let msg5 = IpcMessage::request("5", IpcRequest::SubscribeEvents);
@@ -268,14 +273,16 @@ async fn test_interactive_session_approval_and_rejection() {
         let http = http_client.clone();
         let body = prepare_req.clone();
         let url = prepare_url.clone();
-        tokio::spawn(async move {
-            http.post(&url).json(&body).send().await
-        })
+        tokio::spawn(async move { http.post(&url).json(&body).send().await })
     };
 
     // Wait for DaemonEvent::IncomingSession
     let received_session_id = match event_rx.recv().await.unwrap() {
-        DaemonEvent::IncomingSession { session_id, peer_alias, .. } => {
+        DaemonEvent::IncomingSession {
+            session_id,
+            peer_alias,
+            ..
+        } => {
             assert_eq!(peer_alias, "UntrustedPhone");
             session_id
         }
@@ -283,7 +290,11 @@ async fn test_interactive_session_approval_and_rejection() {
     };
 
     // Coordinator approves pending session
-    assert!(coordinator.approve_pending_session(&received_session_id).await);
+    assert!(
+        coordinator
+            .approve_pending_session(&received_session_id)
+            .await
+    );
 
     // HTTP POST should now resolve with 200 OK
     let post_resp = client_post.await.unwrap().unwrap();
@@ -300,9 +311,7 @@ async fn test_interactive_session_approval_and_rejection() {
         let http = http_client.clone();
         let body = prepare_req.clone();
         let url = prepare_url.clone();
-        tokio::spawn(async move {
-            http.post(&url).json(&body).send().await
-        })
+        tokio::spawn(async move { http.post(&url).json(&body).send().await })
     };
 
     let reject_session_id = match event_rx.recv().await.unwrap() {
@@ -318,7 +327,11 @@ async fn test_interactive_session_approval_and_rejection() {
     assert_eq!(reject_resp.status(), reqwest::StatusCode::FORBIDDEN);
 
     // --- Scenario C: PIN protection ---
-    trust_store.write().await.set_pin(Some("777888".to_string())).unwrap();
+    trust_store
+        .write()
+        .await
+        .set_pin(Some("777888".to_string()))
+        .unwrap();
 
     // Post without PIN -> 401 Unauthorized
     let unauth_resp = http_client

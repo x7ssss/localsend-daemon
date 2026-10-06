@@ -1,0 +1,12 @@
+[Unit]
+Description=LocalSend Control Socket
+Documentation=https://github.com/x7ssss/localsend-daemon
+
+[Socket]
+ListenStream=/run/localsend/daemon.sock
+SocketUser=localsend
+SocketGroup=localsend
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target

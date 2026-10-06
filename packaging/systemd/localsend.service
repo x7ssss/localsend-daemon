@@ -1,6 +1,6 @@
 [Unit]
 Description=LocalSend Headless Transfer Daemon (localsendd)
-Documentation=https://github.com/localsend/localsend
+Documentation=https://github.com/x7ssss/localsend-daemon
 After=network.target network-online.target
 Wants=network-online.target
 

@@ -86,14 +86,15 @@ pub fn get_eligible_interfaces() -> Result<Vec<NetworkInterfaceInfo>, InterfaceE
             continue;
         }
 
-        if let if_addrs::IfAddr::V4(v4) = iface.addr {
-            if is_eligible_ipv4(v4.ip) && seen_ips.insert(v4.ip) {
-                eligible.push(NetworkInterfaceInfo {
-                    name: iface.name,
-                    ip: v4.ip,
-                    netmask: Some(v4.netmask),
-                });
-            }
+        if let if_addrs::IfAddr::V4(v4) = iface.addr
+            && is_eligible_ipv4(v4.ip)
+            && seen_ips.insert(v4.ip)
+        {
+            eligible.push(NetworkInterfaceInfo {
+                name: iface.name,
+                ip: v4.ip,
+                netmask: Some(v4.netmask),
+            });
         }
     }
 

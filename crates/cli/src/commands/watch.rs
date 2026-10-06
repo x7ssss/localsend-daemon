@@ -61,7 +61,10 @@ fn display_event(event: &DaemonEvent) {
             files,
         } => {
             let total_bytes: u64 = files.iter().map(|f| f.size).sum();
-            println!("\n{}", style("🔔 INCOMING TRANSFER REQUEST").yellow().bold());
+            println!(
+                "\n{}",
+                style("🔔 INCOMING TRANSFER REQUEST").yellow().bold()
+            );
             println!("   Sender:  {} ({})", style(peer_alias).bold(), peer_ip);
             println!("   Session: {}", style(session_id).cyan());
             println!(
@@ -70,11 +73,7 @@ fn display_event(event: &DaemonEvent) {
                 indicatif::HumanBytes(total_bytes)
             );
             for f in files {
-                println!(
-                    "     - {} ({})",
-                    f.file_name,
-                    indicatif::HumanBytes(f.size)
-                );
+                println!("     - {} ({})", f.file_name, indicatif::HumanBytes(f.size));
             }
             println!(
                 "   👉 Run {} to accept or {} to decline.\n",

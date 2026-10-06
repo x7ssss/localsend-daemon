@@ -9,22 +9,17 @@ use subtle::ConstantTimeEq;
 use time::OffsetDateTime;
 
 /// Policy controlling how inbound transfer requests are evaluated.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AutoAcceptMode {
     /// All transfers require explicit interactive approval via IPC.
     Never,
     /// Transfers are automatically accepted only if the peer's fingerprint is in the trust store
     /// or the sender IP belongs to an allowed CIDR subnet.
+    #[default]
     TrustedOnly,
     /// All incoming transfers are automatically accepted (subject to valid PIN if configured).
     Always,
-}
-
-impl Default for AutoAcceptMode {
-    fn default() -> Self {
-        Self::TrustedOnly
-    }
 }
 
 /// A trusted remote peer device record.
@@ -149,7 +144,12 @@ impl TrustStore {
         }
 
         // 2. Check allowed CIDR subnets
-        if self.data.allowed_cidrs.iter().any(|cidr| cidr.contains(&ip)) {
+        if self
+            .data
+            .allowed_cidrs
+            .iter()
+            .any(|cidr| cidr.contains(&ip))
+        {
             return true;
         }
 
@@ -180,7 +180,9 @@ impl TrustStore {
 
     /// Add or update a trusted peer and persist atomically.
     pub fn add_peer(&mut self, fingerprint: String, alias: String) -> Result<(), TrustError> {
-        let clean_fp = fingerprint.replace([':', ' ', '-'], "").to_ascii_uppercase();
+        let clean_fp = fingerprint
+            .replace([':', ' ', '-'], "")
+            .to_ascii_uppercase();
         let now = OffsetDateTime::now_utc();
         let added_at = now
             .format(&time::format_description::well_known::Rfc3339)
@@ -208,7 +210,9 @@ impl TrustStore {
 
     /// Remove a trusted peer by fingerprint.
     pub fn remove_peer(&mut self, fingerprint: &str) -> Result<bool, TrustError> {
-        let clean_fp = fingerprint.replace([':', ' ', '-'], "").to_ascii_uppercase();
+        let clean_fp = fingerprint
+            .replace([':', ' ', '-'], "")
+            .to_ascii_uppercase();
         let initial_len = self.data.trusted_peers.len();
         self.data
             .trusted_peers

@@ -23,10 +23,7 @@ pub async fn run(
         println!("  Uptime:         {}s", status.uptime_secs);
         println!(
             "  Active Session: {}",
-            status
-                .active_session
-                .as_deref()
-                .unwrap_or("None (Idle)")
+            status.active_session.as_deref().unwrap_or("None (Idle)")
         );
         println!(
             "  Bound IPs:      {}",

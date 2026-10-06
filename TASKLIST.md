@@ -162,26 +162,26 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 6: Systemd Hardening, Integration Verification & CI/CD
 ### Subsystem: Systemd Service Hardening
-- [ ] Production-ready `localsend.service` systemd unit file
-- [ ] Hardened security sandbox directives:
-  - [ ] `DynamicUser=yes` (or unprivileged user)
-  - [ ] `ProtectSystem=strict`
-  - [ ] `ProtectHome=read-only`
-  - [ ] `PrivateTmp=yes`
-  - [ ] `NoNewPrivileges=yes`
-  - [ ] `CapabilityBoundingSet=`
-  - [ ] `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`
-  - [ ] `ReadWritePaths=/var/lib/localsend /downloads`
-- [ ] Socket activation support (`localsend.socket`)
+- [x] Production-ready `localsend.service` systemd unit file
+- [x] Hardened security sandbox directives:
+  - [x] `DynamicUser=yes` (or unprivileged user)
+  - [x] `ProtectSystem=strict`
+  - [x] `ProtectHome=read-only`
+  - [x] `PrivateTmp=yes`
+  - [x] `NoNewPrivileges=yes`
+  - [x] `CapabilityBoundingSet=`
+  - [x] `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`
+  - [x] `ReadWritePaths=/var/lib/localsend /downloads`
+- [x] Socket activation support (`localsend.socket`)
 
 ### Subsystem: Compatibility & Stress Testing
-- [ ] End-to-end integration test suite against official LocalSend v2 clients
-- [ ] Multi-gigabyte file transfer streaming verification
-- [ ] Interrupted transfer recovery and staging cleanup tests
-- [ ] High packet loss / unstable network discovery resilience
+- [x] End-to-end integration test suite against official LocalSend v2 clients
+- [x] Multi-gigabyte file transfer streaming verification
+- [x] Interrupted transfer recovery and staging cleanup tests
+- [x] High packet loss / unstable network discovery resilience
 
 ### Subsystem: CI/CD & Build Pipeline
-- [ ] GitHub Actions workflow for automated testing (`cargo test`, `cargo check`)
-- [ ] Zero-warning `cargo clippy` and `cargo fmt` enforcement
-- [ ] Multi-architecture binary releases (Linux x86_64, aarch64, armv7, Windows x86_64, macOS universal)
-- [ ] Semantic versioning and changelog automation
+- [x] GitHub Actions workflow for automated testing (`cargo test`, `cargo check`)
+- [x] Zero-warning `cargo clippy` and `cargo fmt` enforcement
+- [x] Multi-architecture binary releases (Linux x86_64, aarch64, armv7, Windows x86_64, macOS universal)
+- [x] Semantic versioning and changelog automation

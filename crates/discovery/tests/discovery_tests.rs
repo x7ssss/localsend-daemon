@@ -1,11 +1,9 @@
 use localsend_discovery::{
-    contains_subslice, is_eligible_interface_name, is_eligible_ipv4, should_process_packet,
-    DiscoveredPeer, MulticastConfig, NetworkInterfaceInfo, PeerRegistry, RegistryEvent,
-    SubnetScanner, DEFAULT_PORT, MULTICAST_IPV4, MULTICAST_IPV6,
+    DEFAULT_PORT, DiscoveredPeer, MULTICAST_IPV4, MULTICAST_IPV6, MulticastConfig,
+    NetworkInterfaceInfo, PeerRegistry, RegistryEvent, SubnetScanner, contains_subslice,
+    is_eligible_interface_name, is_eligible_ipv4, should_process_packet,
 };
-use localsend_protocol::{
-    DeviceType, MulticastAnnouncement, ProtocolType, RegisterDto,
-};
+use localsend_protocol::{DeviceType, MulticastAnnouncement, ProtocolType, RegisterDto};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 

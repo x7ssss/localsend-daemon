@@ -8,8 +8,8 @@ use rcgen::{
     CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair, KeyUsagePurpose,
     PKCS_RSA_SHA256, SanType,
 };
-use rsa::pkcs8::EncodePrivateKey;
 use rsa::RsaPrivateKey;
+use rsa::pkcs8::EncodePrivateKey;
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
@@ -89,7 +89,9 @@ pub fn generate_tls_identity(
     let mut params = CertificateParams::default();
 
     // Subject DN
-    params.distinguished_name.push(DnType::CommonName, "LocalSend");
+    params
+        .distinguished_name
+        .push(DnType::CommonName, "LocalSend");
     params
         .distinguished_name
         .push(DnType::OrganizationName, "LocalSend");

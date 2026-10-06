@@ -5,8 +5,8 @@
 pub mod routes;
 pub mod tls;
 
-use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
 use axum::Router;
+use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -15,7 +15,7 @@ use tokio_rustls::TlsAcceptor;
 use tokio_util::sync::CancellationToken;
 use tower::Service;
 
-pub use routes::{create_router, AppState};
+pub use routes::{AppState, create_router};
 pub use tls::build_tls_server_config;
 
 /// Headless TLS HTTP/1.1 receiver server.

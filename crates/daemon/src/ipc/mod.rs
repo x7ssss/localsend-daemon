@@ -10,9 +10,7 @@ pub use protocol::{
     DaemonEvent, DaemonStatus, FileInfo, IpcMessage, IpcPayload, IpcRequest, IpcResponse,
     PeerSummary,
 };
-pub use server::{
-    handle_ipc_client, IpcServerState, DEFAULT_UDS_SOCKET_PATH, MAX_IPC_LINE_LENGTH,
-};
+pub use server::{DEFAULT_UDS_SOCKET_PATH, IpcServerState, MAX_IPC_LINE_LENGTH, handle_ipc_client};
 
 #[cfg(unix)]
 pub use server::run_uds_server;

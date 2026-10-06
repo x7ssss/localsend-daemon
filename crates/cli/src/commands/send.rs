@@ -92,9 +92,7 @@ pub async fn run(
     };
 
     if !json_output {
-        let peer_desc = known_alias
-            .as_deref()
-            .unwrap_or(target);
+        let peer_desc = known_alias.as_deref().unwrap_or(target);
         eprintln!(
             "{}",
             style(format!(
@@ -157,7 +155,8 @@ pub async fn run(
     let client = create_pinned_client(&effective_fingerprint)?;
 
     // 5. Send POST /api/localsend/v2/prepare-upload
-    let mut prepare_url = format!("https://{target_ip}:{target_port}/api/localsend/v2/prepare-upload");
+    let mut prepare_url =
+        format!("https://{target_ip}:{target_port}/api/localsend/v2/prepare-upload");
     if let Some(ref p) = pin {
         prepare_url.push_str(&format!("?pin={p}"));
     }
@@ -182,11 +181,7 @@ pub async fn run(
         eprintln!("{}", style("Requesting transfer session approval...").dim());
     }
 
-    let prep_resp = client
-        .post(&prepare_url)
-        .json(&prepare_req)
-        .send()
-        .await?;
+    let prep_resp = client.post(&prepare_url).json(&prepare_req).send().await?;
 
     let prep_status = prep_resp.status();
     if prep_status == reqwest::StatusCode::UNAUTHORIZED {
@@ -206,8 +201,10 @@ pub async fn run(
     if !json_output {
         eprintln!(
             "{}",
-            style(format!("Session accepted: {session_id}. Streaming files..."))
-                .green()
+            style(format!(
+                "Session accepted: {session_id}. Streaming files..."
+            ))
+            .green()
         );
     }
 
@@ -222,7 +219,7 @@ pub async fn run(
                         .and_then(|n| n.to_str())
                         .unwrap_or_default()
             })
-            .ok_or_else(|| "Internal mapping error")?;
+            .ok_or("Internal mapping error")?;
 
         let token = prep_data
             .files
@@ -259,10 +256,10 @@ pub async fn run(
         let pb_clone = pb.clone();
 
         let stream = reader_stream.map(move |chunk| {
-            if let Ok(ref bytes) = chunk {
-                if let Some(ref p) = pb_clone {
-                    p.inc(bytes.len() as u64);
-                }
+            if let Ok(ref bytes) = chunk
+                && let Some(ref p) = pb_clone
+            {
+                p.inc(bytes.len() as u64);
             }
             chunk
         });

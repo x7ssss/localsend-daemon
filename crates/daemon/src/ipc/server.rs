@@ -16,13 +16,13 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio_util::codec::{Framed, LinesCodec};
 #[cfg(unix)]
 use tokio_util::sync::CancellationToken;
 
 /// Default filesystem socket location.
-pub const DEFAULT_UDS_SOCKET_PATH: &'static str = "/run/localsend/daemon.sock";
+pub const DEFAULT_UDS_SOCKET_PATH: &str = "/run/localsend/daemon.sock";
 
 /// Maximum line length for newline-delimited JSON messages (256 KiB).
 pub const MAX_IPC_LINE_LENGTH: usize = 256 * 1024;
@@ -45,10 +45,7 @@ pub struct IpcServerState {
 }
 
 /// Handle a single IPC client connection stream (generic over any async stream).
-pub async fn handle_ipc_client<S>(
-    stream: S,
-    state: IpcServerState,
-) -> Result<(), std::io::Error>
+pub async fn handle_ipc_client<S>(stream: S, state: IpcServerState) -> Result<(), std::io::Error>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
@@ -192,10 +189,10 @@ where
                     };
 
                     let response = IpcMessage::response(message.id, resp);
-                    if let Ok(json_line) = serde_json::to_string(&response) {
-                        if framed.send(json_line).await.is_err() {
-                            break;
-                        }
+                    if let Ok(json_line) = serde_json::to_string(&response)
+                        && framed.send(json_line).await.is_err()
+                    {
+                        break;
                     }
 
                     if subscribe_now {
@@ -209,10 +206,10 @@ where
                 match event_res {
                     Ok(event) => {
                         let msg = IpcMessage::event(event);
-                        if let Ok(json_line) = serde_json::to_string(&msg) {
-                            if framed.send(json_line).await.is_err() {
-                                break;
-                            }
+                        if let Ok(json_line) = serde_json::to_string(&msg)
+                            && framed.send(json_line).await.is_err()
+                        {
+                            break;
                         }
                     }
                     Err(broadcast::error::RecvError::Lagged(dropped)) => {

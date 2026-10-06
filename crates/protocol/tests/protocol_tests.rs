@@ -1,8 +1,8 @@
 use localsend_protocol::{
-    compute_fingerprint, generate_tls_identity, is_windows_reserved, resolve_collision,
-    sanitize_filename, verify_fingerprint_constant_time, DeviceType, FileMetadata,
-    MulticastAnnouncement, PrepareUploadRequest, PrepareUploadResponse, ProtocolType, RegisterDto,
-    SanitizeError, UploadParams,
+    DeviceType, FileMetadata, MulticastAnnouncement, PrepareUploadRequest, PrepareUploadResponse,
+    ProtocolType, RegisterDto, SanitizeError, UploadParams, compute_fingerprint,
+    generate_tls_identity, is_windows_reserved, resolve_collision, sanitize_filename,
+    verify_fingerprint_constant_time,
 };
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
@@ -254,8 +254,14 @@ fn test_sanitize_filename_malicious_rejections() {
     assert!(matches!(res, Err(SanitizeError::PathTraversal(_))));
 
     // 6. Traversal symbols . and ..
-    assert!(matches!(sanitize_filename("."), Err(SanitizeError::PathTraversal(_))));
-    assert!(matches!(sanitize_filename(".."), Err(SanitizeError::PathTraversal(_))));
+    assert!(matches!(
+        sanitize_filename("."),
+        Err(SanitizeError::PathTraversal(_))
+    ));
+    assert!(matches!(
+        sanitize_filename(".."),
+        Err(SanitizeError::PathTraversal(_))
+    ));
 
     // 7. Null byte injection
     let res = sanitize_filename("safe_file\0.exe");
@@ -263,11 +269,17 @@ fn test_sanitize_filename_malicious_rejections() {
 
     // 8. Empty string
     assert!(matches!(sanitize_filename(""), Err(SanitizeError::Empty)));
-    assert!(matches!(sanitize_filename("   "), Err(SanitizeError::Empty)));
+    assert!(matches!(
+        sanitize_filename("   "),
+        Err(SanitizeError::Empty)
+    ));
 
     // 9. Excessively long filename (> 255 bytes)
     let long_name = "a".repeat(256);
-    assert!(matches!(sanitize_filename(&long_name), Err(SanitizeError::TooLong(256))));
+    assert!(matches!(
+        sanitize_filename(&long_name),
+        Err(SanitizeError::TooLong(256))
+    ));
 }
 
 #[test]
