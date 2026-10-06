@@ -10,5 +10,15 @@ description = "Multicast UDP and HTTP subnet fallback discovery engine for Local
 
 [dependencies]
 localsend-protocol = { path = "../protocol" }
+tokio = { version = "1.40", features = ["full"] }
+tokio-util = "0.7"
+futures-util = "0.3"
+socket2 = { version = "0.5", features = ["all"] }
+if-addrs = "0.13"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-manual-roots", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+thiserror = "2.0"
 
 [dev-dependencies]

@@ -51,27 +51,27 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 2: Dual-Path Discovery & Peer Registry
 ### Subsystem: Multicast UDP Engine (`crates/discovery`)
-- [ ] Multicast UDP socket initialization with `SO_REUSEADDR` / `SO_REUSEPORT` via `socket2`
-- [ ] Join multicast group `224.0.0.167` on port `53317`
-- [ ] Network interface scanning and binding across active IPv4 interfaces
-- [ ] Periodic multicast announcement beacon broadcaster (Tokio interval task)
-- [ ] Continuous inbound announcement listener and JSON parser
-- [ ] Self-echo packet suppression (filtering own fingerprint / device ID)
-- [ ] Graceful shutdown announcement broadcast
+- [x] Multicast UDP socket initialization with `SO_REUSEADDR` / `SO_REUSEPORT` via `socket2`
+- [x] Join multicast group `224.0.0.167` (and IPv6 `ff12::fd3a:e420`) on port `53317`
+- [x] Network interface scanning, physical adapter eligibility filtering, and per-NIC binding
+- [x] Multi-datagram initial announcement burst (0ms, 100ms, 500ms) and periodic idle heartbeat broadcaster
+- [x] Continuous inbound announcement listener with zero-allocation stack screening
+- [x] Self-echo packet suppression (filtering own fingerprint bytes before serde deserialization)
+- [x] Graceful shutdown announcement broadcast
 
 ### Subsystem: Subnet HTTP Fallback Scanner (`crates/discovery`)
-- [ ] Local interface IP and subnet mask resolution
-- [ ] CIDR `/24` IP range generator
-- [ ] Bounded-concurrency HTTP probing worker pool (via `reqwest` or pure `hyper`)
-- [ ] Probe `/api/localsend/v2/info` with aggressive timeout (500ms)
-- [ ] Fallback trigger logic when no multicast peers are detected within threshold
+- [x] Local interface IP and subnet mask resolution, excluding virtual/VPN adapters
+- [x] CIDR `/24` host range generator (skipping local IP)
+- [x] Bounded-concurrency HTTP probing worker pool (64 concurrent permits via `reqwest`)
+- [x] Probe `/api/localsend/v2/register` and `/api/localsend/v2/info` with strict 750ms timeout
+- [x] Fallback trigger logic and peer auto-registration
 
 ### Subsystem: In-Memory Peer Registry (`crates/discovery`)
-- [ ] Thread-safe concurrent `PeerRegistry` actor (`tokio::sync::RwLock` / channel)
-- [ ] Peer entry caching with alias, IP, port, device model, type, fingerprint, and protocol version
-- [ ] Background TTL reaper task to evict peers inactive for > 60 seconds
-- [ ] Tokio broadcast channel emitting peer arrival, update, and departure events
-- [ ] Unit and mock tests for registry concurrency and expiration
+- [x] Thread-safe concurrent `PeerRegistry` actor (`tokio::sync::RwLock` + `tokio::sync::broadcast`)
+- [x] Peer entry caching with alias, IP, port, device model, type, fingerprint, and protocol version
+- [x] Background TTL reaper task to evict peers inactive for > 120 seconds
+- [x] Tokio broadcast channel emitting peer arrival (`Discovered`), update (`Updated`), and departure (`Evicted`) events
+- [x] Unit and mock tests for registry concurrency, updating, and expiration
 
 ---
 

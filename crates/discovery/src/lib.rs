@@ -6,26 +6,23 @@
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod engine;
+pub mod filter;
+pub mod interfaces;
+pub mod multicast;
+pub mod registry;
+pub mod scanner;
+
+pub use engine::DiscoveryEngine;
+pub use filter::{contains_subslice, should_process_packet};
+pub use interfaces::{
+    get_eligible_interfaces, is_eligible_interface_name, is_eligible_ipv4, InterfaceError,
+    NetworkInterfaceInfo,
+};
+pub use multicast::{
+    MulticastConfig, MulticastEngine, MulticastError, DEFAULT_PORT, MULTICAST_IPV4, MULTICAST_IPV6,
+};
+pub use registry::{DiscoveredPeer, PeerRegistry, RegistryEvent};
+pub use scanner::{ScannerError, SubnetScanner, MAX_CONCURRENT_PROBES, PROBE_TIMEOUT};
+
 pub use localsend_protocol as protocol;
-
-/// Discovery engine placeholder state.
-#[derive(Debug, Default)]
-pub struct DiscoveryEngine;
-
-impl DiscoveryEngine {
-    /// Creates a new uninitialized discovery engine instance.
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_engine_init() {
-        let engine = DiscoveryEngine::new();
-        assert!(format!("{engine:?}").contains("DiscoveryEngine"));
-    }
-}
