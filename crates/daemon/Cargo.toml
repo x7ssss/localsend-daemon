@@ -44,3 +44,15 @@ nix = { version = "0.29", features = ["fs", "signal"] }
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-manual-roots", "json"] }
+
+[package.metadata.deb]
+name = "localsend-daemon"
+maintainer = "localsend-daemon contributors <https://github.com/x7ssss/localsend-daemon>"
+copyright = "2026 localsend-daemon contributors"
+extended-description = """Headless LocalSend transfer daemon (localsendd) providing HTTPS receiver, dynamic session coordination, and local Unix Domain Socket control plane."""
+section = "net"
+priority = "optional"
+assets = [
+    ["target/release/localsendd", "usr/bin/localsendd", "755"],
+    ["packaging/systemd/localsendd.service", "lib/systemd/system/localsendd.service", "644"],
+]

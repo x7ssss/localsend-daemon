@@ -344,7 +344,7 @@ async fn test_interactive_session_approval_and_rejection() {
 
     // Post with wrong PIN query parameter -> 401 Unauthorized
     let wrong_pin_resp = http_client
-        .post(&format!("{prepare_url}?pin=000000"))
+        .post(format!("{prepare_url}?pin=000000"))
         .json(&prepare_req)
         .send()
         .await

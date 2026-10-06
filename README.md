@@ -107,8 +107,19 @@ flowchart TD
 
 ### 1. Installation
 
-Download pre-compiled binaries from the [Releases](https://github.com/x7ssss/localsend-daemon/releases) page or compile from source:
+#### One-Line Shell Installer (Linux & macOS)
+```bash
+curl -fsSL https://raw.githubusercontent.com/x7ssss/localsend-daemon/main/install.sh | sh
+```
+This automatically detects your OS and architecture, downloads the latest binary release, installs `localsendd` and `lsend` to `/usr/local/bin`, and optionally installs the `localsendd.service` systemd unit on Linux hosts.
 
+#### Debian / Ubuntu (`.deb`)
+Download the `.deb` release package from [Releases](https://github.com/x7ssss/localsend-daemon/releases):
+```bash
+sudo dpkg -i localsend-daemon_*.deb
+```
+
+#### Build from Source
 ```bash
 # Build optimized release binaries
 cargo build --release

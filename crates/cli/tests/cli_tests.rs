@@ -174,7 +174,7 @@ async fn test_e2e_send_with_pinned_tls_client() {
     // 3. Send file using `send::run` with valid pinned fingerprint
     let send_result = send::run(
         &target_addr,
-        &[test_file.clone()],
+        std::slice::from_ref(&test_file),
         None,
         Some(server_identity.fingerprint.clone()),
         true, // standalone
@@ -202,7 +202,7 @@ async fn test_e2e_send_with_pinned_tls_client() {
         "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF".to_string();
     let fail_result = send::run(
         &target_addr,
-        &[test_file.clone()],
+        std::slice::from_ref(&test_file),
         None,
         Some(mismatched_fp),
         true,
@@ -275,7 +275,7 @@ async fn test_e2e_send_with_pin_protection() {
     // A. Attempt send without PIN -> Must fail (401 Unauthorized)
     let no_pin_res = send::run(
         &target_addr,
-        &[test_file.clone()],
+        std::slice::from_ref(&test_file),
         None,
         Some(server_identity.fingerprint.clone()),
         true,
@@ -287,7 +287,7 @@ async fn test_e2e_send_with_pin_protection() {
     // B. Attempt send with incorrect PIN -> Must fail
     let wrong_pin_res = send::run(
         &target_addr,
-        &[test_file.clone()],
+        std::slice::from_ref(&test_file),
         Some("000000".to_string()),
         Some(server_identity.fingerprint.clone()),
         true,
@@ -299,7 +299,7 @@ async fn test_e2e_send_with_pin_protection() {
     // C. Send with correct PIN -> Must succeed
     let correct_pin_res = send::run(
         &target_addr,
-        &[test_file.clone()],
+        std::slice::from_ref(&test_file),
         Some("123456".to_string()),
         Some(server_identity.fingerprint.clone()),
         true,

@@ -45,3 +45,18 @@ jobs:
           tar: unix
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Debian Package (.deb)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          curl -fsSL https://github.com/kornelski/cargo-deb/releases/download/v2.11.1/cargo-deb-v2.11.1-x86_64-unknown-linux-musl.tar.gz | tar -xz -C ~/.cargo/bin || cargo install cargo-deb --locked
+          cargo build --release -p localsend-daemon
+          cargo deb -p localsend-daemon --no-build
+
+      - name: Upload Debian Package Asset
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/debian/*.deb
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}

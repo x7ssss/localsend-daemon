@@ -30,7 +30,7 @@ fn test_filter_screening_rules() {
     assert!(!should_process_packet(&oversized, LOCAL_FP));
 
     // 4. Missing JSON framing
-    let broken_json = format!(r#"{{"alias":"Peer1","protocol":"https""#);
+    let broken_json = r#"{"alias":"Peer1","protocol":"https""#;
     assert!(!should_process_packet(broken_json.as_bytes(), LOCAL_FP));
 
     // 5. Missing protocol discriminator

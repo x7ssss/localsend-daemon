@@ -105,7 +105,6 @@ pub async fn stream_to_disk_and_hash(
 
         #[cfg(unix)]
         {
-            use std::os::unix::fs::OpenOptionsExt;
             opts.mode(0o600);
         }
 
