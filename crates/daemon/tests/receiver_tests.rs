@@ -1,7 +1,10 @@
 use localsend_daemon::{
     build_tls_server_config, commit_file_atomically, get_temp_file_path, stream_to_disk_and_hash,
-    AppState, ReceiverServer, SessionCoordinator, StorageError,
+    AppState, AutoAcceptMode, DaemonEvent, ReceiverServer, SessionCoordinator, StorageError,
+    TrustStore,
 };
+use std::sync::Arc;
+use tokio::sync::{broadcast, RwLock};
 use localsend_discovery::PeerRegistry;
 use localsend_protocol::crypto::generate_tls_identity;
 use localsend_protocol::{
@@ -114,11 +117,19 @@ async fn test_full_https_receiver_flow() {
         download: true,
     };
 
+    let trust_config_path = temp_dir.join("trusted_devices.yaml");
+    let mut trust_store = TrustStore::load_or_create(&trust_config_path).unwrap();
+    trust_store.set_mode(AutoAcceptMode::Always).unwrap();
+    let trust_store = Arc::new(RwLock::new(trust_store));
+    let (event_tx, _) = broadcast::channel::<DaemonEvent>(128);
+
     let state = AppState {
         coordinator,
         registry,
         device_info,
         save_dir: temp_dir.clone(),
+        trust_store,
+        event_tx,
     };
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -264,11 +275,19 @@ async fn test_cancel_session_flow() {
         download: true,
     };
 
+    let trust_config_path = temp_dir.join("trusted_devices_cancel.yaml");
+    let mut trust_store = TrustStore::load_or_create(&trust_config_path).unwrap();
+    trust_store.set_mode(AutoAcceptMode::Always).unwrap();
+    let trust_store = Arc::new(RwLock::new(trust_store));
+    let (event_tx, _) = broadcast::channel::<DaemonEvent>(128);
+
     let state = AppState {
         coordinator: coordinator.clone(),
         registry,
         device_info,
         save_dir: temp_dir.clone(),
+        trust_store,
+        event_tx,
     };
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

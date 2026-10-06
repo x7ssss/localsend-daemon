@@ -106,24 +106,30 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 4: Deterministic Policy Engine & Inter-Process Communication (IPC)
 ### Subsystem: Deterministic Policy Engine (`crates/daemon`)
-- [ ] Inbound request policy evaluator
-- [ ] CIDR subnet allowlist/blocklist rule engine
-- [ ] Pinned TLS SHA-256 fingerprint allowlist/blocklist
-- [ ] Trust-On-First-Use (TOFU) SQLite or JSON persistent trust store
-- [ ] Auto-accept mode toggle (`--auto-accept` or interactive approval)
+- [x] Inbound request policy evaluator
+- [x] CIDR subnet allowlist/blocklist rule engine
+- [x] Pinned TLS SHA-256 fingerprint allowlist/blocklist
+- [x] Persistent YAML trust store (`TrustStore`) with atomic file writes
+- [x] Constant-time PIN gate verification
+- [x] Auto-accept mode toggle (`Never`, `TrustedOnly`, `Always`)
 
 ### Subsystem: Local IPC Server (`crates/daemon`)
-- [ ] Platform-specific IPC transport:
-  - [ ] Unix Domain Socket (`/run/localsend/daemon.sock` / `$XDG_RUNTIME_DIR/localsend.sock`) on Linux/Unix
-  - [ ] Windows Named Pipe (`\\.\pipe\localsend-daemon`) on Windows
-- [ ] Framed JSON-RPC protocol definition
-- [ ] Daemon commands:
-  - [ ] `status`: Retrieve daemon uptime, listening interfaces, active session
-  - [ ] `peers`: List current active peers from registry
-  - [ ] `accept`: Authorize pending transfer session
-  - [ ] `reject`: Decline pending transfer session
-  - [ ] `shutdown`: Graceful service termination
-- [ ] Push event streaming: notify connected CLI clients of transfer progress and discovery events
+- [x] Platform-specific IPC transport:
+  - [x] Unix Domain Socket (`/run/localsend/daemon.sock`) with 0660 file permissions
+  - [x] In-memory async duplex stream abstraction for cross-platform IPC testing and execution
+- [x] Newline-delimited JSON IPC protocol definition (`IpcMessage`, `IpcRequest`, `IpcResponse`, `DaemonEvent`)
+- [x] Daemon commands:
+  - [x] `get_status`: Retrieve daemon uptime, listening interfaces, active session
+  - [x] `list_peers`: List current active peers from registry
+  - [x] `scan_subnet`: Active subnet scanning trigger
+  - [x] `accept_session`: Authorize pending transfer session
+  - [x] `reject_session`: Decline pending transfer session
+  - [x] `cancel_session`: Abort active transfer session
+  - [x] `get_trust_config`, `set_trust_mode`, `add_trusted_peer`, `remove_trusted_peer`, `add_trusted_subnet`, `remove_trusted_subnet`, `set_pin`: Trust store management
+  - [x] `subscribe_events`: Event subscription channel
+- [x] Interactive manual approval workflow (30-second timeout channel) wired into `/prepare-upload`
+- [x] Real-time push event streaming: notify connected CLI clients of transfer progress, completion, and discovery events
+- [x] Hardened systemd service file (`packaging/systemd/localsendd.service`)
 
 ---
 

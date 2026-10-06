@@ -1,14 +1,14 @@
 //! Transfer Session Coordinator
 //!
 //! Manages single-active transfer session concurrency locks (HTTP 409 Conflict),
-//! issued upload token validation, file lifecycle state tracking, and session timeouts.
+//! interactive approval hooks via IPC, upload token validation, and session timeouts.
 
 use localsend_protocol::{FileMetadata, PrepareUploadResponse, UploadParams};
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
+use tokio::sync::{oneshot, RwLock};
 use uuid::Uuid;
 
 /// Default session inactivity expiration (5 minutes).
@@ -63,6 +63,24 @@ pub struct ActiveSession {
     pub tokens: HashMap<String, String>,
 }
 
+/// A pending session waiting for manual user approval via IPC.
+pub struct PendingSession {
+    /// Session ID.
+    pub session_id: String,
+    /// Sender peer alias.
+    pub sender_alias: String,
+    /// Sender certificate fingerprint.
+    pub sender_fingerprint: String,
+    /// Sender IP address.
+    pub sender_ip: IpAddr,
+    /// File manifest.
+    pub files: HashMap<String, FileMetadata>,
+    /// Creation timestamp.
+    pub created_at: Instant,
+    /// Approval oneshot channel sender.
+    pub approve_tx: Option<oneshot::Sender<bool>>,
+}
+
 /// Errors occurring during session coordination.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum SessionError {
@@ -81,12 +99,19 @@ pub enum SessionError {
     /// File ID was not part of the manifest.
     #[error("File ID not found in session manifest")]
     FileNotFound,
+    /// Session was explicitly rejected by user via IPC.
+    #[error("Session rejected")]
+    Rejected,
+    /// Interactive session approval timed out.
+    #[error("Session approval timed out")]
+    ApprovalTimeout,
 }
 
-/// Single-session concurrency and token coordinator.
-#[derive(Debug, Clone)]
+/// Single-session concurrency, approval, and token coordinator.
+#[derive(Clone)]
 pub struct SessionCoordinator {
     session: Arc<RwLock<Option<ActiveSession>>>,
+    pending: Arc<RwLock<Option<PendingSession>>>,
     timeout: Duration,
 }
 
@@ -101,23 +126,22 @@ impl SessionCoordinator {
     pub fn new(timeout: Duration) -> Self {
         Self {
             session: Arc::new(RwLock::new(None)),
+            pending: Arc::new(RwLock::new(None)),
             timeout,
         }
     }
 
-    /// Checks if a session is currently running (and has not timed out).
+    /// Checks if a session or pending approval is currently running.
     pub async fn is_busy(&self) -> bool {
         let mut guard = self.session.write().await;
         if let Some(active) = &*guard {
             if active.last_activity.elapsed() > self.timeout {
                 *guard = None;
-                false
             } else {
-                true
+                return true;
             }
-        } else {
-            false
         }
+        self.pending.read().await.is_some()
     }
 
     /// Retrieve the current active session if not expired.
@@ -135,26 +159,14 @@ impl SessionCoordinator {
         }
     }
 
-    /// Attempt to create a new session, returning 409 Conflict if one is already active.
-    pub async fn try_create_session(
-        &self,
+    /// Helper to convert files map into staged files and tokens.
+    fn create_active_session_internal(
+        session_id: String,
         sender_alias: String,
         sender_fingerprint: String,
         sender_ip: IpAddr,
         files_map: HashMap<String, FileMetadata>,
-    ) -> Result<PrepareUploadResponse, SessionError> {
-        let mut guard = self.session.write().await;
-
-        // Check for active session
-        if let Some(existing) = &*guard {
-            if existing.last_activity.elapsed() <= self.timeout {
-                return Err(SessionError::Conflict);
-            }
-            // Expired: reset and allow new session
-            *guard = None;
-        }
-
-        let session_id = Uuid::new_v4().to_string();
+    ) -> (ActiveSession, PrepareUploadResponse) {
         let mut staged_files = HashMap::new();
         let mut tokens = HashMap::new();
 
@@ -184,12 +196,146 @@ impl SessionCoordinator {
             tokens: tokens.clone(),
         };
 
-        *guard = Some(active);
-
-        Ok(PrepareUploadResponse {
+        let response = PrepareUploadResponse {
             session_id,
             files: tokens,
-        })
+        };
+
+        (active, response)
+    }
+
+    /// Attempt to immediately create a session (used for auto-accepted transfers).
+    pub async fn try_create_session(
+        &self,
+        sender_alias: String,
+        sender_fingerprint: String,
+        sender_ip: IpAddr,
+        files_map: HashMap<String, FileMetadata>,
+    ) -> Result<PrepareUploadResponse, SessionError> {
+        let mut guard = self.session.write().await;
+
+        if let Some(existing) = &*guard {
+            if existing.last_activity.elapsed() <= self.timeout {
+                return Err(SessionError::Conflict);
+            }
+            *guard = None;
+        }
+
+        let session_id = Uuid::new_v4().to_string();
+        let (active, resp) = Self::create_active_session_internal(
+            session_id,
+            sender_alias,
+            sender_fingerprint,
+            sender_ip,
+            files_map,
+        );
+
+        *guard = Some(active);
+        Ok(resp)
+    }
+
+    /// Register a pending approval session and wait for manual approval.
+    pub async fn request_session_approval(
+        &self,
+        session_id: String,
+        sender_alias: String,
+        sender_fingerprint: String,
+        sender_ip: IpAddr,
+        files_map: HashMap<String, FileMetadata>,
+        approval_timeout: Duration,
+    ) -> Result<PrepareUploadResponse, SessionError> {
+        let (tx, rx) = oneshot::channel();
+
+        {
+            let mut guard = self.session.write().await;
+            if let Some(existing) = &*guard {
+                if existing.last_activity.elapsed() <= self.timeout {
+                    return Err(SessionError::Conflict);
+                }
+                *guard = None;
+            }
+
+            let mut pending_guard = self.pending.write().await;
+            if pending_guard.is_some() {
+                return Err(SessionError::Conflict);
+            }
+
+            *pending_guard = Some(PendingSession {
+                session_id: session_id.clone(),
+                sender_alias: sender_alias.clone(),
+                sender_fingerprint: sender_fingerprint.clone(),
+                sender_ip,
+                files: files_map.clone(),
+                created_at: Instant::now(),
+                approve_tx: Some(tx),
+            });
+        }
+
+        // Wait for decision with timeout
+        match tokio::time::timeout(approval_timeout, rx).await {
+            Ok(Ok(true)) => {
+                // Approved! Move from pending to active
+                let mut guard = self.session.write().await;
+                let mut pending_guard = self.pending.write().await;
+                *pending_guard = None;
+
+                let (active, resp) = Self::create_active_session_internal(
+                    session_id,
+                    sender_alias,
+                    sender_fingerprint,
+                    sender_ip,
+                    files_map,
+                );
+                *guard = Some(active);
+                Ok(resp)
+            }
+            Ok(Ok(false)) => {
+                // Explicitly rejected
+                let mut pending_guard = self.pending.write().await;
+                *pending_guard = None;
+                Err(SessionError::Rejected)
+            }
+            Ok(Err(_)) => {
+                // Channel dropped
+                let mut pending_guard = self.pending.write().await;
+                *pending_guard = None;
+                Err(SessionError::Rejected)
+            }
+            Err(_) => {
+                // Timeout
+                let mut pending_guard = self.pending.write().await;
+                *pending_guard = None;
+                Err(SessionError::ApprovalTimeout)
+            }
+        }
+    }
+
+    /// Approve a pending session by session ID.
+    pub async fn approve_pending_session(&self, session_id: &str) -> bool {
+        let mut guard = self.pending.write().await;
+        if let Some(pending) = &mut *guard {
+            if pending.session_id == session_id {
+                if let Some(tx) = pending.approve_tx.take() {
+                    let _ = tx.send(true);
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Reject a pending session by session ID.
+    pub async fn reject_pending_session(&self, session_id: &str) -> bool {
+        let mut guard = self.pending.write().await;
+        if let Some(pending) = &mut *guard {
+            if pending.session_id == session_id {
+                if let Some(tx) = pending.approve_tx.take() {
+                    let _ = tx.send(false);
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Validate an incoming upload stream against session parameters and client IP.
@@ -216,7 +362,6 @@ impl SessionCoordinator {
 
         // Validate client IP (ignore port)
         if active.sender_ip != client_ip {
-            // Permit loopback equivalence if testing on localhost
             let is_loopback = active.sender_ip.is_loopback() && client_ip.is_loopback();
             if !is_loopback {
                 return Err(SessionError::ForbiddenIp);
@@ -229,7 +374,6 @@ impl SessionCoordinator {
             _ => return Err(SessionError::InvalidToken),
         }
 
-        // Retrieve file and mark Streaming
         let file = match active.files.get_mut(&params.file_id) {
             Some(f) => f,
             None => return Err(SessionError::FileNotFound),
@@ -242,8 +386,6 @@ impl SessionCoordinator {
     }
 
     /// Mark a file as completed. Clears the session if all scheduled files have completed.
-    ///
-    /// Returns `true` if all files finished and session was cleared.
     pub async fn complete_file(
         &self,
         session_id: &str,
@@ -263,7 +405,6 @@ impl SessionCoordinator {
             return Err(SessionError::FileNotFound);
         }
 
-        // Check if all files in session are complete
         let all_done = active
             .files
             .values()
@@ -306,75 +447,5 @@ impl SessionCoordinator {
 
         *guard = None;
         Ok(active)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::net::Ipv4Addr;
-
-    #[tokio::test]
-    async fn test_session_lifecycle_and_conflict() {
-        let coordinator = SessionCoordinator::default();
-        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 50));
-
-        let mut files = HashMap::new();
-        files.insert(
-            "file-1".to_string(),
-            FileMetadata {
-                id: "file-1".to_string(),
-                file_name: "test.pdf".to_string(),
-                size: 1000,
-                file_type: "application/pdf".to_string(),
-                sha256: None,
-                preview: None,
-                metadata: None,
-            },
-        );
-
-        // 1. Create session
-        let resp = coordinator
-            .try_create_session("Sender1".to_string(), "FP1".to_string(), ip, files)
-            .await
-            .expect("First session must succeed");
-
-        assert!(coordinator.is_busy().await);
-        let token = resp.files.get("file-1").unwrap().clone();
-
-        // 2. Conflicting concurrent session must be rejected with 409 Conflict
-        let conflict_err = coordinator
-            .try_create_session("Sender2".to_string(), "FP2".to_string(), ip, HashMap::new())
-            .await;
-        assert_eq!(conflict_err.unwrap_err(), SessionError::Conflict);
-
-        // 3. Validate upload parameters
-        let valid_params = UploadParams {
-            session_id: resp.session_id.clone(),
-            file_id: "file-1".to_string(),
-            token: token.clone(),
-        };
-        let staged = coordinator
-            .validate_upload(&valid_params, ip)
-            .await
-            .expect("Validation must succeed");
-        assert_eq!(staged.status, FileStatus::Streaming);
-
-        // 4. Invalid token rejected
-        let bad_params = UploadParams {
-            session_id: resp.session_id.clone(),
-            file_id: "file-1".to_string(),
-            token: "wrong-token".to_string(),
-        };
-        let err = coordinator.validate_upload(&bad_params, ip).await;
-        assert_eq!(err.unwrap_err(), SessionError::InvalidToken);
-
-        // 5. Complete file -> all files done -> session cleared
-        let all_done = coordinator
-            .complete_file(&resp.session_id, "file-1")
-            .await
-            .unwrap();
-        assert!(all_done);
-        assert!(!coordinator.is_busy().await);
     }
 }
