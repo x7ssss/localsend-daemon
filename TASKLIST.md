@@ -135,24 +135,28 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 5: Scriptable CLI (`lsend`) & Rustls Fingerprint Pinning
 ### Subsystem: CLI Utility (`crates/cli`)
-- [ ] Argument parsing via `clap` (derive mode)
-- [ ] Subcommand `lsend scan`: Discover and list nearby peers with formatting
-- [ ] Subcommand `lsend peers`: Query cached peers from running daemon
-- [ ] Subcommand `lsend send <target> <files...>`:
-  - [ ] Resolve target (IP address, hostname, or discovered peer alias)
-  - [ ] Prepare file manifest and metadata
-  - [ ] POST `/api/localsend/v2/prepare-upload`
-  - [ ] Stream files with chunked HTTP POST
-  - [ ] Multi-file transfer progress visualization via `indicatif`
-- [ ] Subcommand `lsend status`: Display daemon operational status and active jobs
-- [ ] Subcommand `lsend accept` / `lsend reject`: Interactively manage pending inbound transfers
-- [ ] Standalone mode: ability for `lsend send` to execute direct peer-to-peer sends without daemon running
+- [x] Argument parsing via `clap` (derive mode with global `--json` and `--socket` flags)
+- [x] Subcommand `lsend scan`: Discover and list nearby peers with formatting and optional HTTP subnet probe
+- [x] Subcommand `lsend peers`: Query cached peers from running daemon
+- [x] Subcommand `lsend send <target> <files...>`:
+  - [x] Resolve target (IP address, hostname, or discovered peer alias)
+  - [x] Prepare file manifest and metadata
+  - [x] POST `/api/localsend/v2/prepare-upload`
+  - [x] Stream files with chunked HTTP POST
+  - [x] Multi-file transfer progress visualization via `indicatif`
+- [x] Subcommand `lsend status`: Display daemon operational status and active jobs
+- [x] Subcommand `lsend watch`: Stream real-time events over UDS IPC
+- [x] Subcommand `lsend accept` / `lsend reject`: Interactively manage pending inbound transfers
+- [x] Subcommand `lsend trust add`: Pin peer fingerprints into trust store
+- [x] Standalone mode: ability for `lsend send` to execute direct peer-to-peer sends without daemon running
 
 ### Subsystem: Custom Rustls Fingerprint Verifier (`crates/cli` & `crates/daemon`)
-- [ ] Implement custom `rustls::client::danger::ServerCertVerifier`
-- [ ] Extract DER certificate bytes during TLS handshake
-- [ ] Calculate SHA-256 digest and compare against expected uppercase 64-hex peer fingerprint
-- [ ] Fallback TOFU validation for outbound transfers
+- [x] Implement custom `rustls::client::danger::ServerCertVerifier`
+- [x] Extract DER certificate bytes during TLS handshake
+- [x] Calculate SHA-256 digest and compare against expected uppercase 64-hex peer fingerprint in constant time
+- [x] TLS 1.2 and TLS 1.3 handshake signature verification via `ring` provider
+- [x] Strict ALPN `[b"http/1.1"]` enforcement
+- [x] Direct peer probing and fingerprint pinning for outbound transfers
 
 ---
 
