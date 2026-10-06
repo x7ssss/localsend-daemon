@@ -47,7 +47,7 @@ pub struct IpcClient {
 
 impl IpcClient {
     /// Default filesystem socket location.
-    pub const DEFAULT_PATH: &'static str = DEFAULT_UDS_SOCKET_PATH;
+    pub const DEFAULT_PATH: &str = DEFAULT_UDS_SOCKET_PATH;
 
     /// Connect to the daemon over a Unix Domain Socket at `path`.
     #[cfg(unix)]

@@ -59,21 +59,19 @@ pub async fn run(
     }
 
     // Attempt to verify running daemon if not standalone
-    if !standalone {
+    if !standalone && !json_output {
         #[cfg(unix)]
-        if let Ok(mut ipc) = IpcClient::connect(Path::new(IpcClient::DEFAULT_PATH)).await {
-            if let Ok(status) = ipc.get_status().await {
-                if !json_output {
-                    eprintln!(
-                        "{}",
-                        style(format!(
-                            "Verified connection to local daemon (uptime {}s)",
-                            status.uptime_secs
-                        ))
-                        .dim()
-                    );
-                }
-            }
+        if let Ok(mut ipc) = IpcClient::connect(Path::new(IpcClient::DEFAULT_PATH)).await
+            && let Ok(status) = ipc.get_status().await
+        {
+            eprintln!(
+                "{}",
+                style(format!(
+                    "Verified connection to local daemon (uptime {}s)",
+                    status.uptime_secs
+                ))
+                .dim()
+            );
         }
     }
 
@@ -331,11 +329,10 @@ async fn resolve_target(
     #[cfg(unix)]
     {
         if let Ok(mut client) = IpcClient::connect(Path::new(IpcClient::DEFAULT_PATH)).await {
-            if let Ok(peers) = client.get_peers().await {
-                for p in peers {
-                    if p.alias.eq_ignore_ascii_case(target) {
-                        return Ok((p.ip, p.port, Some(p.alias), Some(p.fingerprint)));
-                    }
+            let peers = client.get_peers().await.unwrap_or_default();
+            for p in peers {
+                if p.alias.eq_ignore_ascii_case(target) {
+                    return Ok((p.ip, p.port, Some(p.alias), Some(p.fingerprint)));
                 }
             }
         }

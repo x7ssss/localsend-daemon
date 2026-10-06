@@ -3,6 +3,8 @@
 //! Provides the command-line utility, TLS certificate fingerprint pinning verifier,
 //! and UDS IPC client connecting to `localsendd`.
 
+#![allow(clippy::collapsible_if)]
+
 pub mod args;
 pub mod commands;
 pub mod ipc_client;

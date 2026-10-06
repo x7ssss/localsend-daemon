@@ -12,6 +12,9 @@ description = "Command-line interface (lsend) and IPC client for LocalSend"
 name = "lsend"
 path = "src/main.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 localsend-protocol = { path = "../protocol" }
 localsend-discovery = { path = "../discovery" }

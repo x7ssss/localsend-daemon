@@ -4,6 +4,7 @@
 //! live event streaming, and interactive transfer approvals.
 
 #![deny(unsafe_code)]
+#![allow(clippy::collapsible_if)]
 
 use clap::Parser;
 use localsend_cli::commands::{peers, scan, send, session, status, trust, watch};

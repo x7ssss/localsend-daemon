@@ -8,6 +8,9 @@ repository.workspace = true
 readme = "README.md"
 description = "Multicast UDP and HTTP subnet fallback discovery engine for LocalSend"
 
+[lints]
+workspace = true
+
 [dependencies]
 localsend-protocol = { path = "../protocol" }
 tokio = { version = "1.40", features = ["full"] }

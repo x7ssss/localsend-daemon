@@ -8,6 +8,9 @@ repository.workspace = true
 readme = "README.md"
 description = "Core protocol wire formats, cryptographic primitives, and path sanitization for LocalSend v2"
 
+[lints]
+workspace = true
+
 [dependencies]
 hex = "0.4.3"
 rcgen = { version = "0.14.10", features = ["pem", "crypto", "ring"] }
