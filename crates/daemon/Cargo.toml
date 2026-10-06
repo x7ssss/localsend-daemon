@@ -15,5 +15,28 @@ path = "src/main.rs"
 [dependencies]
 localsend-protocol = { path = "../protocol" }
 localsend-discovery = { path = "../discovery" }
+tokio = { version = "1.40", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
+tokio-rustls = "0.26"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rustls-pki-types = "1"
+axum = { version = "0.8", default-features = false, features = ["tokio", "json", "query"] }
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+futures-util = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.11"
+hex = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "2.0"
+uuid = { version = "1.10", features = ["v4"] }
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.29", features = ["fs", "signal"] }
 
 [dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-manual-roots", "json"] }

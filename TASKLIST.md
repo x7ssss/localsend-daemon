@@ -77,29 +77,30 @@ Track engineering deliverables across all architecture phases. Completed items a
 
 ## Phase 3: Headless HTTPS Receiver, Session Coordinator & Atomic IO
 ### Subsystem: Axum HTTPS Server (`crates/daemon`)
-- [ ] Configure `rustls` server acceptor using generated self-signed TLS certificate and private key
-- [ ] Axum router setup for `/api/localsend/v2/*` routes
-- [ ] Implement `GET /api/localsend/v2/info` returning daemon metadata and capabilities
-- [ ] Implement `POST /api/localsend/v2/register` handling inbound peer registration
-- [ ] Implement `POST /api/localsend/v2/prepare-upload` evaluating upload requests
-- [ ] Implement `POST /api/localsend/v2/upload` with raw streaming body extraction
-- [ ] Implement `POST /api/localsend/v2/cancel` terminating active transfer sessions
+- [x] Configure `rustls` server acceptor using generated self-signed TLS certificate, explicit `ring` provider, and strictly pinned `b"http/1.1"` ALPN
+- [x] Axum router setup for `/api/localsend/v2/*` routes
+- [x] Implement `GET /api/localsend/v2/info` returning daemon metadata and capabilities
+- [x] Implement `POST /api/localsend/v2/register` handling inbound peer registration
+- [x] Implement `POST /api/localsend/v2/prepare-upload` evaluating upload requests
+- [x] Implement `POST /api/localsend/v2/upload` with raw streaming body extraction
+- [x] Implement `POST /api/localsend/v2/cancel` terminating active transfer sessions
 
 ### Subsystem: Dynamic Session Coordinator (`crates/daemon`)
-- [ ] Single-session concurrency lock (rejecting concurrent transfer attempts with HTTP 409 Conflict)
-- [ ] Ephemeral upload token generator per file in manifest
-- [ ] Session validation middleware verifying `sessionId` and `token` on `/upload`
-- [ ] Session lifecycle state machine: `PendingApproval -> InProgress -> Completed | Aborted`
-- [ ] Idle and timeout session cleanup handlers
+- [x] Single-session concurrency lock (rejecting concurrent transfer attempts with HTTP 409 Conflict)
+- [x] Ephemeral upload token generator per file in manifest
+- [x] Session validation verifying `sessionId`, `fileId`, `token`, and client IP on `/upload`
+- [x] Session lifecycle state machine: `Pending -> Streaming -> Completed | Failed`
+- [x] Idle and timeout session cleanup handlers (5-minute inactivity window)
 
 ### Subsystem: Atomic Disk Streamer (`crates/daemon`)
-- [ ] Chunked async body streaming directly to disk (`tokio::fs::File`, `tokio::io::BufWriter`)
-- [ ] Staging file format: `<destination>/<sanitized_name>.part.<session_id>`
-- [ ] Real-time streaming SHA-256 calculation
-- [ ] Post-transfer hash verification against manifest hash (if supplied by sender)
-- [ ] Atomic rename (`tokio::fs::rename`) from staging path to final destination upon success
-- [ ] Automatic deletion of incomplete `.part` files on abort or network error
-- [ ] Disk space pre-allocation checks before transfer acceptance
+- [x] Chunked async body streaming directly to disk with bounded memory (`tokio::io::BufWriter` 512 KiB)
+- [x] Staging file format: `.localsend_<sessionId>_<fileId>.part` with RAII `TempFileGuard`
+- [x] Zero-copy real-time streaming SHA-256 calculation directly over borrowed chunk slices
+- [x] Post-transfer hash verification and size boundary checks (returning HTTP 422 on mismatch)
+- [x] Atomic rename (`tokio::fs::rename`) from staging path to sanitized destination path
+- [x] Parent directory metadata synchronization (`sync_all`)
+- [x] Automatic deletion of incomplete `.part` files on abort or network error
+- [x] Startup scavenger unlinking stale `.part` files older than max age
 
 ---
 
