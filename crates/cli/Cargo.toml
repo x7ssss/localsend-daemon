@@ -1,0 +1,18 @@
+[package]
+name = "localsend-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+description = "Command-line interface (lsend) and IPC client for LocalSend"
+
+[[bin]]
+name = "lsend"
+path = "src/main.rs"
+
+[dependencies]
+localsend-protocol = { path = "../protocol" }
+
+[dev-dependencies]

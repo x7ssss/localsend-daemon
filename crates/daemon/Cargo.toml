@@ -1,0 +1,19 @@
+[package]
+name = "localsend-daemon"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+description = "Headless LocalSend daemon (localsendd) featuring HTTPS receiver, session coordination, and IPC"
+
+[[bin]]
+name = "localsendd"
+path = "src/main.rs"
+
+[dependencies]
+localsend-protocol = { path = "../protocol" }
+localsend-discovery = { path = "../discovery" }
+
+[dev-dependencies]

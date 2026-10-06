@@ -1,0 +1,14 @@
+[package]
+name = "localsend-discovery"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+description = "Multicast UDP and HTTP subnet fallback discovery engine for LocalSend"
+
+[dependencies]
+localsend-protocol = { path = "../protocol" }
+
+[dev-dependencies]

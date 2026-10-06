@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/protocol",
+    "crates/discovery",
+    "crates/daemon",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["localsend-daemon contributors"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/x7ssss/localsend-daemon"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

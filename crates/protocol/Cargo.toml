@@ -1,0 +1,13 @@
+[package]
+name = "localsend-protocol"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+description = "Core protocol wire formats, cryptographic primitives, and path sanitization for LocalSend v2"
+
+[dependencies]
+
+[dev-dependencies]
