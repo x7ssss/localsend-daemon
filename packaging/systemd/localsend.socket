@@ -7,6 +7,7 @@ ListenStream=/run/localsend/daemon.sock
 SocketUser=localsend
 SocketGroup=localsend
 SocketMode=0660
+Service=localsendd.service
 
 [Install]
 WantedBy=sockets.target

@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/localsendd
+ExecStart=/usr/local/bin/localsendd --save-dir /srv/incoming --auto-accept trusted-only
 Restart=on-failure
 RestartSec=5s
 
@@ -25,7 +25,7 @@ StateDirectoryMode=0700
 ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=yes
-ReadWritePaths=/var/lib/localsend /downloads /run/localsend
+ReadWritePaths=/var/lib/localsend /srv/incoming /downloads /run/localsend
 
 # Network & Privilege Hardening
 AmbientCapabilities=CAP_NET_BIND_SERVICE

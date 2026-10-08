@@ -22,12 +22,10 @@ tokio = { version = "1.40", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io", "codec"] }
 tokio-rustls = "0.26"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
-rustls-pki-types = "1"
 axum = { version = "0.8", default-features = false, features = ["tokio", "json", "query"] }
 hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
 tower = "0.5"
-tower-http = { version = "0.6", features = ["trace", "cors"] }
 futures-util = { version = "0.3", features = ["sink"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

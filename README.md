@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/x7ssss/localsend-daemon/actions/workflows/ci.yml/badge.svg)](https://github.com/x7ssss/localsend-daemon/actions/workflows/ci.yml)
 [![Release](https://github.com/x7ssss/localsend-daemon/actions/workflows/release.yml/badge.svg)](https://github.com/x7ssss/localsend-daemon/actions/workflows/release.yml)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](Cargo.toml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 [![Rust Edition: 2024](https://img.shields.io/badge/Rust-2024%20%2F%202021-orange.svg)](Cargo.toml)
 
 A production-grade, headless **LocalSend v2 protocol** daemon and scriptable CLI written in modern Rust with Tokio, Rustls, and Axum. Delivers high-throughput, memory-bounded local file transfers with zero GUI or Flutter dependencies.
@@ -146,6 +146,13 @@ localsendd --save-dir /srv/incoming --auto-accept always --port 53317
 localsendd --save-dir /srv/incoming --pin 482910
 ```
 
+Daemon options can also be configured via environment variables:
+- `LOCALSEND_SAVE_DIR`: Storage directory for received files (default: current directory)
+- `LOCALSEND_PORT`: HTTP/HTTPS listening port (default: `53317`)
+- `LOCALSEND_ALIAS`: Announcement name on the network
+- `LOCALSEND_CONFIG_PATH`: Path to YAML trust store (default: `/etc/localsend/trusted_devices.yaml`)
+- `LOCALSEND_SOCKET_PATH`: Unix Domain Socket path (default: `/run/localsend/daemon.sock`)
+
 ### 3. Discovering Peers on the Network
 
 Scan for available LocalSend peers advertising on the local network:
@@ -209,6 +216,42 @@ lsend trust add 9F8E7D6C5B4A3210... --alias "Work Laptop"
 # Interactively accept or reject pending transfer sessions
 lsend accept <SESSION_ID>
 lsend reject <SESSION_ID>
+```
+
+---
+
+## Firewall Configuration
+
+LocalSend relies on port **53317** for both multicast peer discovery (UDP) and incoming HTTPS transfers (TCP). If a local firewall is enabled, ensure both protocols are permitted.
+
+### `ufw` (Debian, Ubuntu, Raspberry Pi OS)
+
+```bash
+sudo ufw allow 53317/tcp comment "LocalSend HTTPS file transfers"
+sudo ufw allow 53317/udp comment "LocalSend multicast peer discovery"
+sudo ufw reload
+```
+
+### `firewalld` (Fedora, RHEL, Rocky Linux, CentOS)
+
+```bash
+sudo firewall-cmd --permanent --add-port=53317/tcp
+sudo firewall-cmd --permanent --add-port=53317/udp
+sudo firewall-cmd --reload
+```
+
+### `iptables` (Raw Linux)
+
+```bash
+sudo iptables -A INPUT -p tcp --dport 53317 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 53317 -j ACCEPT
+```
+
+### Windows Defender Firewall (PowerShell)
+
+```powershell
+New-NetFirewallRule -DisplayName "LocalSend Daemon (TCP-In)" -Direction Inbound -LocalPort 53317 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "LocalSend Discovery (UDP-In)" -Direction Inbound -LocalPort 53317 -Protocol UDP -Action Allow
 ```
 
 ---
@@ -289,7 +332,7 @@ The workspace includes extensive unit tests, mock network verification, and an e
 cargo fmt --all -- --check
 
 # Run zero-warning clippy analysis
-cargo clippy --workspace -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 
 # Execute full test suite across workspace
 cargo test --workspace
@@ -300,10 +343,18 @@ cargo test --test e2e_transfer
 
 ---
 
+## Roadmap
+
+- **Expanded Platform Packaging**: Native macOS Homebrew tap formula, Arch Linux AUR (`PKGBUILD`), and Alpine Linux edge APK packages.
+- **Enhanced Network Transports**: IPv6 discovery mesh optimizations, UPnP / NAT-PMP gateway mapping, and WebRTC fallback for cross-subnet transfers.
+- **Interactive TUI Mode**: Terminal dashboard (`lsend tui`) featuring real-time visual transfer queue management and interactive peer inspection without desktop GUI dependencies.
+
+---
+
 ## License
 
 Licensed under either of:
-- Apache License, Version 2.0 ([LICENSE-APACHE](http://www.apache.org/licenses/LICENSE-2.0))
-- MIT License ([LICENSE-MIT](http://opensource.org/licenses/MIT))
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
