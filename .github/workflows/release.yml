@@ -41,6 +41,7 @@ jobs:
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: localsendd,lsend
+          archive: localsend-daemon-$target
           target: ${{ matrix.target }}
           tar: unix
           zip: windows
