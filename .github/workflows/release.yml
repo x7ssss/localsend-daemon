@@ -15,8 +15,26 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   build-and-release:
     name: Build & Release (${{ matrix.target }})
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -27,7 +45,7 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
           - target: aarch64-apple-darwin
             os: macos-latest
           - target: x86_64-pc-windows-msvc
@@ -43,6 +61,7 @@ jobs:
           bin: localsendd,lsend
           archive: localsend-daemon-$target
           target: ${{ matrix.target }}
+          ref: ${{ github.event.inputs.tag && format('refs/tags/{0}', github.event.inputs.tag) || github.ref }}
           tar: unix
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,6 +69,7 @@ jobs:
       - name: Build Debian Package (.deb)
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: |
+          mkdir -p ~/.cargo/bin
           curl -fsSL https://github.com/kornelski/cargo-deb/releases/download/v2.11.1/cargo-deb-v2.11.1-x86_64-unknown-linux-musl.tar.gz | tar -xz -C ~/.cargo/bin || cargo install cargo-deb --locked
           cargo build --release -p localsend-daemon
           cargo deb -p localsend-daemon --no-build
